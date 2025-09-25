@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "gpio.h": "c",
+        "encoder.h": "c",
+        "pulse_cnt.h": "c"
+    }
+}
