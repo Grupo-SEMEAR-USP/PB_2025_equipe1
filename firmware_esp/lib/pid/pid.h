@@ -29,13 +29,13 @@ extern bool BREAK_FLAG;
 #define KP_L 1.5 
 #define KI_L 0.05   
 #define KD_L 0.1   
-#define TICKS_TO_RADS_LEFT 0.01570  // Fator de conversão entre ticks do encoder para RPM
+#define TICKS_TO_RADS_LEFT (3.141592*2*(1000/PERIOD))/1321 // Fator de conversão entre ticks do encoder para RPM
 
 /* Motor Direito */
 #define KP_R 1.5    
 #define KI_R 0.05     
 #define KD_R 0.1  
-#define TICKS_TO_RADS_RIGHT 0.01570 // Fator de conversão entre ticks do encoder para RPM
+#define TICKS_TO_RADS_RIGHT (3.141592*2*(1000/PERIOD))/1321 // Fator de conversão entre ticks do encoder para RPM
 
 /* Limites para ação de controle conforme resolução do PWM */
 #define Max_Output LEDC_MAX_DUTY
