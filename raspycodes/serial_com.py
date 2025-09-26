@@ -1,7 +1,7 @@
 # Importing Libraries 
 import serial as sr
 ##Define a serial
-serial = sr.Serial(port='COM4', baudrate=115200, timeout=.1)
+serial = sr.Serial(port='/dev/ttyACM0', baudrate=115200, timeout=.1)
 
 #Lê as informações Recebidas pelo Serial e Retorna elas com String
 def read_serial():
