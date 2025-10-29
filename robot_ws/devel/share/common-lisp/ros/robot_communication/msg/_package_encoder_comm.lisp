@@ -1,0 +1,1 @@
+/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/devel/.private/robot_communication/share/common-lisp/ros/robot_communication/msg/_package_encoder_comm.lisp

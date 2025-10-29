@@ -1,0 +1,1 @@
+/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/devel/.private/robot_communication/share/roseus/ros/robot_communication/msg/encoder_comm.l
