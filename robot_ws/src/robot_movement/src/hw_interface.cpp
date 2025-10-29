@@ -82,8 +82,8 @@ double HwInterface::clampSpeed(double v_input)
 void HwInterface::publishWheelSpeeds()
 {
     // Preenche a mensagem customizada
-    commanded_vel_msg_.left_vel = commanded_left_vel_;
-    commanded_vel_msg_.right_vel = commanded_right_vel_;
+    commanded_vel_msg_.left_vel = (float)commanded_left_vel_;
+    commanded_vel_msg_.right_vel = (float)commanded_right_vel_;
 
     // Publica para o hardware
     velocity_command_pub_.publish(commanded_vel_msg_);
