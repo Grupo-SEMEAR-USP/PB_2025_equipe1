@@ -1,0 +1,3 @@
+<launch>
+  <node name="mqtt_comm" pkg="robot_communication" type="mqtt_comm.py" output="screen"/> 
+</launch>
