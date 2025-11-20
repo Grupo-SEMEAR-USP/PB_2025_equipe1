@@ -1,86 +1,82 @@
 #include "h_bridge.h"
+#include "def.h"           
+#include "driver/gpio.h"
+#include "esp_log.h"
 
-void init_gpio_bridge(){
-    gpio_set_direction(INPUT_LEFT_1, GPIO_MODE_OUTPUT);
-    gpio_set_direction(INPUT_LEFT_2, GPIO_MODE_OUTPUT);
-    gpio_set_direction(STBY_LEFT, GPIO_MODE_OUTPUT);
-    gpio_set_level(STBY_LEFT, HIGH);
+/* Configurações do LEDC */
+#define LEDC_MODE          LEDC_HIGH_SPEED_MODE
+#define LEDC_TIMER_LEFT    LEDC_TIMER_0
+#define LEDC_TIMER_RIGHT   LEDC_TIMER_0
+#define LEDC_FREQUENCY     (5000) // 5 kHz
+#define LEDC_CHANNEL_LEFT   LEDC_CHANNEL_0
+#define LEDC_CHANNEL_RIGHT  LEDC_CHANNEL_1
 
-    gpio_set_direction(INPUT_RIGHT_1, GPIO_MODE_OUTPUT);
-    gpio_set_direction(INPUT_RIGHT_2, GPIO_MODE_OUTPUT);
-    gpio_set_direction(STBY_RIGHT, GPIO_MODE_OUTPUT);
-    gpio_set_level(STBY_RIGHT, HIGH);
-    
-    gpio_set_direction(LEDC_OUTPUT_RIGHT, GPIO_MODE_OUTPUT);
-    gpio_set_direction(LEDC_OUTPUT_LEFT, GPIO_MODE_OUTPUT);
-}
+/* Macros */
+#define MOTOR_INPUT_1(MOTOR_SIDE) ((MOTOR_SIDE) == (MOTOR_LEFT) ? INPUT_LEFT_1 : INPUT_RIGHT_1)
+#define MOTOR_INPUT_2(MOTOR_SIDE) ((MOTOR_SIDE) == (MOTOR_LEFT) ? INPUT_LEFT_2 : INPUT_RIGHT_2)
+#define MOTOR_CHANNEL(MOTOR_SIDE) ((MOTOR_SIDE) == (MOTOR_LEFT) ? LEDC_CHANNEL_LEFT : LEDC_CHANNEL_RIGHT)
+#define MOTOR_OUTPUT(MOTOR_SIDE) ((MOTOR_SIDE) == (MOTOR_LEFT) ? PWM_LEFT : PWM_RIGHT)
+#define LEDC_TIMER(MOTOR_SIDE) ((MOTOR_SIDE) == (MOTOR_LEFT) ? LEDC_TIMER_LEFT : LEDC_TIMER_RIGHT)
 
-void init_pwm_bridge(){
-    ledc_timer_config_t ledc_timer_left = {
+static const char *TAG = "H_BRIDGE";
+
+esp_err_t init_h_bridge(motor_side_t side){
+    // Inicializa GPIO
+    gpio_set_direction(MOTOR_INPUT_1(side), GPIO_MODE_OUTPUT);
+    gpio_set_direction(MOTOR_INPUT_2(side), GPIO_MODE_OUTPUT);
+    gpio_set_direction(MOTOR_OUTPUT(side), GPIO_MODE_OUTPUT);
+    // Não tem problema serem cahamadas múltiplas vezes (idempotentes)
+    gpio_set_direction(STBY, GPIO_MODE_OUTPUT);
+    gpio_set_level(STBY, HIGH);
+
+    ledc_timer_config_t ledc_timer = {
         .speed_mode         = LEDC_MODE,
-        .timer_num          = LEDC_TIMER_LEFT,
+        .timer_num          = LEDC_TIMER(side),
         .duty_resolution    = LEDC_DUTY_RES,
         .freq_hz            = LEDC_FREQUENCY,
         .clk_cfg            = LEDC_AUTO_CLK
     };
-    ESP_ERROR_CHECK(ledc_timer_config(&ledc_timer_left));
+    ESP_ERROR_CHECK(ledc_timer_config(&ledc_timer));
 
-    ledc_timer_config_t ledc_timer_right = {
-        .speed_mode         = LEDC_MODE,
-        .timer_num          = LEDC_TIMER_RIGHT,
-        .duty_resolution    = LEDC_DUTY_RES,
-        .freq_hz            = LEDC_FREQUENCY,
-        .clk_cfg            = LEDC_AUTO_CLK
-    };
-    ESP_ERROR_CHECK(ledc_timer_config(&ledc_timer_right));
-
-    ledc_channel_config_t ledc_left_channel = {
+    ledc_channel_config_t ledc_channel = {
         .speed_mode     = LEDC_MODE,
-        .channel        = MOTOR_CHANNEL(MOTOR_LEFT),
-        .timer_sel      = LEDC_TIMER_LEFT,
+        .channel        = MOTOR_CHANNEL(side),
+        .timer_sel      = LEDC_TIMER(side),
         .intr_type      = LEDC_INTR_DISABLE,
-        .gpio_num       = MOTOR_OUTPUT(MOTOR_LEFT),
+        .gpio_num       = MOTOR_OUTPUT(side),
         .duty           = 0,
         .hpoint         = 0,
     };
-    ESP_ERROR_CHECK(ledc_channel_config(&ledc_left_channel));
-
-    ledc_channel_config_t ledc_right_channel = {
-        .speed_mode     = LEDC_MODE,
-        .channel        = MOTOR_CHANNEL(MOTOR_RIGHT),
-        .timer_sel      = LEDC_TIMER_RIGHT,
-        .intr_type      = LEDC_INTR_DISABLE,
-        .gpio_num       = MOTOR_OUTPUT(MOTOR_RIGHT),
-        .duty           = 0,
-        .hpoint         = 0
-    };
-    ESP_ERROR_CHECK(ledc_channel_config(&ledc_right_channel));
-}
-
-// Define a velocidade e a direção do motor (assumindo a direção pelo sinal da velocidade)
-esp_err_t update_motor(motor_side_t motor, int u){
-    u > 0 ? _set_forward(motor) : _set_backward(motor);
-    
-    u = u > 0 ? u : -u;  // Abs of action control u
-
-    ledc_set_duty(LEDC_MODE, MOTOR_CHANNEL(motor), u);
-    ledc_update_duty(LEDC_MODE, MOTOR_CHANNEL(motor));
+    ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel));
 
     return ESP_OK;
 }
 
 // Controla motor para frente, considerando in1 = 1 e in2 = 0
-esp_err_t _set_forward(motor_side_t motor){
-    gpio_set_level(MOTOR_INPUT_1(motor), HIGH);
-    gpio_set_level(MOTOR_INPUT_2(motor), LOW);
+static esp_err_t _set_forward(motor_side_t side){
+    gpio_set_level(MOTOR_INPUT_1(side), HIGH);
+    gpio_set_level(MOTOR_INPUT_2(side), LOW);
 
     return ESP_OK;
 }
 
 // Controla motor para trás, considerando in1 = 0 e in2 = 1
-esp_err_t _set_backward(motor_side_t motor){
-    gpio_set_level(MOTOR_INPUT_1(motor), LOW);
-    gpio_set_level(MOTOR_INPUT_2(motor), HIGH);
+static esp_err_t _set_backward(motor_side_t side){
+    gpio_set_level(MOTOR_INPUT_1(side), LOW);
+    gpio_set_level(MOTOR_INPUT_2(side), HIGH);
+
+    return ESP_OK;
+}
+
+// Define a velocidade e a direção do motor (assumindo a direção pelo sinal da velocidade)
+esp_err_t update_motor(motor_side_t side, float u){
+    u > 0 ? _set_forward(side) : _set_backward(side);
+    int pwm;
+    pwm = (int)(u + 0.5f); // Arredonda o valor de u
+    pwm = pwm > 0 ? pwm : -pwm;  // Abs of action control u
+
+    ledc_set_duty(LEDC_MODE, MOTOR_CHANNEL(side), pwm);
+    ledc_update_duty(LEDC_MODE, MOTOR_CHANNEL(side));
 
     return ESP_OK;
 }
