@@ -35,41 +35,41 @@
   (:serialization-length
    ()
    (+
-    ;; float64 _left_vel
-    8
-    ;; float64 _right_vel
-    8
+    ;; float32 _left_vel
+    4
+    ;; float32 _right_vel
+    4
     ))
   (:serialize
    (&optional strm)
    (let ((s (if strm strm
               (make-string-output-stream (send self :serialization-length)))))
-     ;; float64 _left_vel
-       (sys::poke _left_vel (send s :buffer) (send s :count) :double) (incf (stream-count s) 8)
-     ;; float64 _right_vel
-       (sys::poke _right_vel (send s :buffer) (send s :count) :double) (incf (stream-count s) 8)
+     ;; float32 _left_vel
+       (sys::poke _left_vel (send s :buffer) (send s :count) :float) (incf (stream-count s) 4)
+     ;; float32 _right_vel
+       (sys::poke _right_vel (send s :buffer) (send s :count) :float) (incf (stream-count s) 4)
      ;;
      (if (null strm) (get-output-stream-string s))))
   (:deserialize
    (buf &optional (ptr- 0))
-   ;; float64 _left_vel
-     (setq _left_vel (sys::peek buf ptr- :double)) (incf ptr- 8)
-   ;; float64 _right_vel
-     (setq _right_vel (sys::peek buf ptr- :double)) (incf ptr- 8)
+   ;; float32 _left_vel
+     (setq _left_vel (sys::peek buf ptr- :float)) (incf ptr- 4)
+   ;; float32 _right_vel
+     (setq _right_vel (sys::peek buf ptr- :float)) (incf ptr- 4)
    ;;
    self)
   )
 
-(setf (get robot_communication::velocity_comm :md5sum-) "6276768e5df1d6b78b96e63931fb03fc")
+(setf (get robot_communication::velocity_comm :md5sum-) "74ad8f7ea4d888606e4f41069cec47ff")
 (setf (get robot_communication::velocity_comm :datatype-) "robot_communication/velocity_comm")
 (setf (get robot_communication::velocity_comm :definition-)
       "# velocity_comm.msg
-float64 left_vel
-float64 right_vel
+float32 left_vel
+float32 right_vel
 ")
 
 
 
-(provide :robot_communication/velocity_comm "6276768e5df1d6b78b96e63931fb03fc")
+(provide :robot_communication/velocity_comm "74ad8f7ea4d888606e4f41069cec47ff")
 
 

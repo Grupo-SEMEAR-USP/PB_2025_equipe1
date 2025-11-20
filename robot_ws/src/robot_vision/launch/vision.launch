@@ -1,0 +1,3 @@
+<launch>
+  <node name="vision" pkg="robot_vision" type="vision.py" output="screen"/>
+</launch>

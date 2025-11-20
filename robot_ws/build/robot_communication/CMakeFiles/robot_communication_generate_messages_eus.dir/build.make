@@ -55,6 +55,7 @@ include CMakeFiles/robot_communication_generate_messages_eus.dir/progress.make
 
 CMakeFiles/robot_communication_generate_messages_eus: /home/rosUsr/Shared/PB_2025_equipe1/robot_ws/devel/.private/robot_communication/share/roseus/ros/robot_communication/msg/encoder_comm.l
 CMakeFiles/robot_communication_generate_messages_eus: /home/rosUsr/Shared/PB_2025_equipe1/robot_ws/devel/.private/robot_communication/share/roseus/ros/robot_communication/msg/velocity_comm.l
+CMakeFiles/robot_communication_generate_messages_eus: /home/rosUsr/Shared/PB_2025_equipe1/robot_ws/devel/.private/robot_communication/share/roseus/ros/robot_communication/msg/vision_pattern.l
 CMakeFiles/robot_communication_generate_messages_eus: /home/rosUsr/Shared/PB_2025_equipe1/robot_ws/devel/.private/robot_communication/share/roseus/ros/robot_communication/manifest.l
 
 
@@ -68,13 +69,19 @@ CMakeFiles/robot_communication_generate_messages_eus: /home/rosUsr/Shared/PB_202
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --blue --bold --progress-dir=/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/build/robot_communication/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Generating EusLisp code from robot_communication/velocity_comm.msg"
 	catkin_generated/env_cached.sh /usr/bin/python3 /opt/ros/noetic/share/geneus/cmake/../../../lib/geneus/gen_eus.py /home/rosUsr/Shared/PB_2025_equipe1/robot_ws/src/robot_communication/msg/velocity_comm.msg -Irobot_communication:/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/src/robot_communication/msg -Istd_msgs:/opt/ros/noetic/share/std_msgs/cmake/../msg -p robot_communication -o /home/rosUsr/Shared/PB_2025_equipe1/robot_ws/devel/.private/robot_communication/share/roseus/ros/robot_communication/msg
 
+/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/devel/.private/robot_communication/share/roseus/ros/robot_communication/msg/vision_pattern.l: /opt/ros/noetic/lib/geneus/gen_eus.py
+/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/devel/.private/robot_communication/share/roseus/ros/robot_communication/msg/vision_pattern.l: /home/rosUsr/Shared/PB_2025_equipe1/robot_ws/src/robot_communication/msg/vision_pattern.msg
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --blue --bold --progress-dir=/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/build/robot_communication/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Generating EusLisp code from robot_communication/vision_pattern.msg"
+	catkin_generated/env_cached.sh /usr/bin/python3 /opt/ros/noetic/share/geneus/cmake/../../../lib/geneus/gen_eus.py /home/rosUsr/Shared/PB_2025_equipe1/robot_ws/src/robot_communication/msg/vision_pattern.msg -Irobot_communication:/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/src/robot_communication/msg -Istd_msgs:/opt/ros/noetic/share/std_msgs/cmake/../msg -p robot_communication -o /home/rosUsr/Shared/PB_2025_equipe1/robot_ws/devel/.private/robot_communication/share/roseus/ros/robot_communication/msg
+
 /home/rosUsr/Shared/PB_2025_equipe1/robot_ws/devel/.private/robot_communication/share/roseus/ros/robot_communication/manifest.l: /opt/ros/noetic/lib/geneus/gen_eus.py
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --blue --bold --progress-dir=/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/build/robot_communication/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Generating EusLisp manifest code for robot_communication"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --blue --bold --progress-dir=/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/build/robot_communication/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Generating EusLisp manifest code for robot_communication"
 	catkin_generated/env_cached.sh /usr/bin/python3 /opt/ros/noetic/share/geneus/cmake/../../../lib/geneus/gen_eus.py -m -o /home/rosUsr/Shared/PB_2025_equipe1/robot_ws/devel/.private/robot_communication/share/roseus/ros/robot_communication robot_communication std_msgs
 
 robot_communication_generate_messages_eus: CMakeFiles/robot_communication_generate_messages_eus
 robot_communication_generate_messages_eus: /home/rosUsr/Shared/PB_2025_equipe1/robot_ws/devel/.private/robot_communication/share/roseus/ros/robot_communication/msg/encoder_comm.l
 robot_communication_generate_messages_eus: /home/rosUsr/Shared/PB_2025_equipe1/robot_ws/devel/.private/robot_communication/share/roseus/ros/robot_communication/msg/velocity_comm.l
+robot_communication_generate_messages_eus: /home/rosUsr/Shared/PB_2025_equipe1/robot_ws/devel/.private/robot_communication/share/roseus/ros/robot_communication/msg/vision_pattern.l
 robot_communication_generate_messages_eus: /home/rosUsr/Shared/PB_2025_equipe1/robot_ws/devel/.private/robot_communication/share/roseus/ros/robot_communication/manifest.l
 robot_communication_generate_messages_eus: CMakeFiles/robot_communication_generate_messages_eus.dir/build.make
 

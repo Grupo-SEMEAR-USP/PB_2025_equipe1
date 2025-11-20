@@ -8,4 +8,6 @@
     (:file "_package_encoder_comm" :depends-on ("_package"))
     (:file "velocity_comm" :depends-on ("_package_velocity_comm"))
     (:file "_package_velocity_comm" :depends-on ("_package"))
+    (:file "vision_pattern" :depends-on ("_package_vision_pattern"))
+    (:file "_package_vision_pattern" :depends-on ("_package"))
   ))

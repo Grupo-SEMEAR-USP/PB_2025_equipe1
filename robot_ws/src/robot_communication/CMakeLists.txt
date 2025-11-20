@@ -44,7 +44,7 @@ catkin_package(
 ## Mark executable scripts (Python etc.) for installation
 catkin_install_python(PROGRAMS
   scripts/mqtt_comm.py
-  scripts/uart_bridge.py
+  scripts/uart_comm.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

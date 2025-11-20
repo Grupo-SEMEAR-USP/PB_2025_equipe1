@@ -68,6 +68,18 @@ install/strip/fast: preinstall/fast
 	/usr/bin/cmake -DCMAKE_INSTALL_DO_STRIP=1 -P cmake_install.cmake
 .PHONY : install/strip/fast
 
+# Special rule for the target install/local
+install/local: preinstall
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Installing only the local directory..."
+	/usr/bin/cmake -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake
+.PHONY : install/local
+
+# Special rule for the target install/local
+install/local/fast: preinstall/fast
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Installing only the local directory..."
+	/usr/bin/cmake -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake
+.PHONY : install/local/fast
+
 # Special rule for the target list_install_components
 list_install_components:
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Available install components are: \"Unspecified\""
@@ -122,18 +134,6 @@ rebuild_cache:
 rebuild_cache/fast: rebuild_cache
 
 .PHONY : rebuild_cache/fast
-
-# Special rule for the target install/local
-install/local: preinstall
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Installing only the local directory..."
-	/usr/bin/cmake -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake
-.PHONY : install/local
-
-# Special rule for the target install/local
-install/local/fast: preinstall/fast
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Installing only the local directory..."
-	/usr/bin/cmake -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake
-.PHONY : install/local/fast
 
 # The main all target
 all: cmake_check_build_system
@@ -311,19 +311,6 @@ doxygen/fast:
 .PHONY : doxygen/fast
 
 #=============================================================================
-# Target rules for targets named download_extra_data
-
-# Build rule for target.
-download_extra_data: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 download_extra_data
-.PHONY : download_extra_data
-
-# fast build rule for target.
-download_extra_data/fast:
-	$(MAKE) -f CMakeFiles/download_extra_data.dir/build.make CMakeFiles/download_extra_data.dir/build
-.PHONY : download_extra_data/fast
-
-#=============================================================================
 # Target rules for targets named robot_communication_geneus
 
 # Build rule for target.
@@ -400,6 +387,32 @@ clean_test_results: cmake_check_build_system
 clean_test_results/fast:
 	$(MAKE) -f CMakeFiles/clean_test_results.dir/build.make CMakeFiles/clean_test_results.dir/build
 .PHONY : clean_test_results/fast
+
+#=============================================================================
+# Target rules for targets named download_extra_data
+
+# Build rule for target.
+download_extra_data: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 download_extra_data
+.PHONY : download_extra_data
+
+# fast build rule for target.
+download_extra_data/fast:
+	$(MAKE) -f CMakeFiles/download_extra_data.dir/build.make CMakeFiles/download_extra_data.dir/build
+.PHONY : download_extra_data/fast
+
+#=============================================================================
+# Target rules for targets named _robot_communication_generate_messages_check_deps_vision_pattern
+
+# Build rule for target.
+_robot_communication_generate_messages_check_deps_vision_pattern: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 _robot_communication_generate_messages_check_deps_vision_pattern
+.PHONY : _robot_communication_generate_messages_check_deps_vision_pattern
+
+# fast build rule for target.
+_robot_communication_generate_messages_check_deps_vision_pattern/fast:
+	$(MAKE) -f CMakeFiles/_robot_communication_generate_messages_check_deps_vision_pattern.dir/build.make CMakeFiles/_robot_communication_generate_messages_check_deps_vision_pattern.dir/build
+.PHONY : _robot_communication_generate_messages_check_deps_vision_pattern/fast
 
 #=============================================================================
 # Target rules for targets named robot_communication_generate_messages_cpp
@@ -525,6 +538,7 @@ help:
 	@echo "... clean"
 	@echo "... depend"
 	@echo "... install/strip"
+	@echo "... install/local"
 	@echo "... std_msgs_generate_messages_py"
 	@echo "... robot_communication_generate_messages_nodejs"
 	@echo "... _robot_communication_generate_messages_check_deps_velocity_comm"
@@ -538,13 +552,14 @@ help:
 	@echo "... install"
 	@echo "... std_msgs_generate_messages_cpp"
 	@echo "... doxygen"
-	@echo "... download_extra_data"
 	@echo "... robot_communication_geneus"
 	@echo "... robot_communication_generate_messages_py"
 	@echo "... robot_communication_generate_messages"
 	@echo "... tests"
 	@echo "... robot_communication_genpy"
 	@echo "... clean_test_results"
+	@echo "... download_extra_data"
+	@echo "... _robot_communication_generate_messages_check_deps_vision_pattern"
 	@echo "... robot_communication_generate_messages_cpp"
 	@echo "... robot_communication_gencpp"
 	@echo "... robot_communication_generate_messages_eus"
@@ -553,7 +568,6 @@ help:
 	@echo "... test"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
-	@echo "... install/local"
 	@echo "... gmock_main"
 	@echo "... gmock"
 	@echo "... gtest_main"

@@ -147,6 +147,7 @@ if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_
   file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/robot_communication/msg" TYPE FILE FILES
     "/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/src/robot_communication/msg/encoder_comm.msg"
     "/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/src/robot_communication/msg/velocity_comm.msg"
+    "/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/src/robot_communication/msg/vision_pattern.msg"
     )
 endif()
 
@@ -199,6 +200,10 @@ endif()
 
 if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_COMPONENT)
   file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/robot_communication" TYPE PROGRAM FILES "/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/build/robot_communication/catkin_generated/installspace/mqtt_comm.py")
+endif()
+
+if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_COMPONENT)
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/robot_communication" TYPE PROGRAM FILES "/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/build/robot_communication/catkin_generated/installspace/uart_comm.py")
 endif()
 
 if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_COMPONENT)

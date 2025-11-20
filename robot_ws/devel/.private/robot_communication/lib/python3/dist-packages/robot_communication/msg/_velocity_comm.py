@@ -8,14 +8,14 @@ import struct
 
 
 class velocity_comm(genpy.Message):
-  _md5sum = "6276768e5df1d6b78b96e63931fb03fc"
+  _md5sum = "74ad8f7ea4d888606e4f41069cec47ff"
   _type = "robot_communication/velocity_comm"
   _has_header = False  # flag to mark the presence of a Header object
   _full_text = """# velocity_comm.msg
-float64 left_vel
-float64 right_vel"""
+float32 left_vel
+float32 right_vel"""
   __slots__ = ['left_vel','right_vel']
-  _slot_types = ['float64','float64']
+  _slot_types = ['float32','float32']
 
   def __init__(self, *args, **kwds):
     """
@@ -55,7 +55,7 @@ float64 right_vel"""
     """
     try:
       _x = self
-      buff.write(_get_struct_2d().pack(_x.left_vel, _x.right_vel))
+      buff.write(_get_struct_2f().pack(_x.left_vel, _x.right_vel))
     except struct.error as se: self._check_types(struct.error("%s: '%s' when writing '%s'" % (type(se), str(se), str(locals().get('_x', self)))))
     except TypeError as te: self._check_types(ValueError("%s: '%s' when writing '%s'" % (type(te), str(te), str(locals().get('_x', self)))))
 
@@ -70,8 +70,8 @@ float64 right_vel"""
       end = 0
       _x = self
       start = end
-      end += 16
-      (_x.left_vel, _x.right_vel,) = _get_struct_2d().unpack(str[start:end])
+      end += 8
+      (_x.left_vel, _x.right_vel,) = _get_struct_2f().unpack(str[start:end])
       return self
     except struct.error as e:
       raise genpy.DeserializationError(e)  # most likely buffer underfill
@@ -85,7 +85,7 @@ float64 right_vel"""
     """
     try:
       _x = self
-      buff.write(_get_struct_2d().pack(_x.left_vel, _x.right_vel))
+      buff.write(_get_struct_2f().pack(_x.left_vel, _x.right_vel))
     except struct.error as se: self._check_types(struct.error("%s: '%s' when writing '%s'" % (type(se), str(se), str(locals().get('_x', self)))))
     except TypeError as te: self._check_types(ValueError("%s: '%s' when writing '%s'" % (type(te), str(te), str(locals().get('_x', self)))))
 
@@ -101,8 +101,8 @@ float64 right_vel"""
       end = 0
       _x = self
       start = end
-      end += 16
-      (_x.left_vel, _x.right_vel,) = _get_struct_2d().unpack(str[start:end])
+      end += 8
+      (_x.left_vel, _x.right_vel,) = _get_struct_2f().unpack(str[start:end])
       return self
     except struct.error as e:
       raise genpy.DeserializationError(e)  # most likely buffer underfill
@@ -111,9 +111,9 @@ _struct_I = genpy.struct_I
 def _get_struct_I():
     global _struct_I
     return _struct_I
-_struct_2d = None
-def _get_struct_2d():
-    global _struct_2d
-    if _struct_2d is None:
-        _struct_2d = struct.Struct("<2d")
-    return _struct_2d
+_struct_2f = None
+def _get_struct_2f():
+    global _struct_2f
+    if _struct_2f is None:
+        _struct_2f = struct.Struct("<2f")
+    return _struct_2f

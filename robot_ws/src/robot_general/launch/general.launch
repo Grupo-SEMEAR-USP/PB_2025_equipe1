@@ -1,5 +1,10 @@
 <launch>
+  <!-- Inicializa a movimentação -->
   <include file="$(find robot_movement)/launch/movement.launch"/>
 
+  <!-- Inicializa a comunicação -->
   <include file="$(find robot_communication)/launch/communication.launch"/>
+
+  <!-- Inicializa a visão -->
+  <include file="$(find robot_vision)/launch/vision.launch"/>
 </launch>
