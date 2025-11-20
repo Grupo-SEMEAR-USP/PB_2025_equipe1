@@ -1,0 +1,8 @@
+prefix=/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/install
+
+Name: robot_general
+Description: Description of robot_general
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

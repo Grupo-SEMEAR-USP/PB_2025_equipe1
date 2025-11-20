@@ -35,10 +35,10 @@ struct velocity_comm_
 
 
 
-   typedef double _left_vel_type;
+   typedef float _left_vel_type;
   _left_vel_type left_vel;
 
-   typedef double _right_vel_type;
+   typedef float _right_vel_type;
   _right_vel_type right_vel;
 
 
@@ -128,12 +128,12 @@ struct MD5Sum< ::robot_communication::velocity_comm_<ContainerAllocator> >
 {
   static const char* value()
   {
-    return "6276768e5df1d6b78b96e63931fb03fc";
+    return "74ad8f7ea4d888606e4f41069cec47ff";
   }
 
   static const char* value(const ::robot_communication::velocity_comm_<ContainerAllocator>&) { return value(); }
-  static const uint64_t static_value1 = 0x6276768e5df1d6b7ULL;
-  static const uint64_t static_value2 = 0x8b96e63931fb03fcULL;
+  static const uint64_t static_value1 = 0x74ad8f7ea4d88860ULL;
+  static const uint64_t static_value2 = 0x6e4f41069cec47ffULL;
 };
 
 template<class ContainerAllocator>
@@ -153,8 +153,8 @@ struct Definition< ::robot_communication::velocity_comm_<ContainerAllocator> >
   static const char* value()
   {
     return "# velocity_comm.msg\n"
-"float64 left_vel\n"
-"float64 right_vel\n"
+"float32 left_vel\n"
+"float32 right_vel\n"
 ;
   }
 
@@ -194,9 +194,9 @@ struct Printer< ::robot_communication::velocity_comm_<ContainerAllocator> >
   template<typename Stream> static void stream(Stream& s, const std::string& indent, const ::robot_communication::velocity_comm_<ContainerAllocator>& v)
   {
     s << indent << "left_vel: ";
-    Printer<double>::stream(s, indent + "  ", v.left_vel);
+    Printer<float>::stream(s, indent + "  ", v.left_vel);
     s << indent << "right_vel: ";
-    Printer<double>::stream(s, indent + "  ", v.right_vel);
+    Printer<float>::stream(s, indent + "  ", v.right_vel);
   }
 };
 

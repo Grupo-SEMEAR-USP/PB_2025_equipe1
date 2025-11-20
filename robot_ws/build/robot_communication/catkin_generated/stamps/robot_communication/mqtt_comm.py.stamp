@@ -68,8 +68,8 @@ class MQTTcomm:
     def cb_vel(self, msg):
         try:
             data = {
-                "left":  int(msg.left_vel * 1000),
-                "right": int(msg.right_vel  * 1000)
+                "left":  msg.left_vel,
+                "right": msg.right_vel
             }
 
             self.client.publish(TOPIC_COMMAND, json.dumps(data), qos=0)

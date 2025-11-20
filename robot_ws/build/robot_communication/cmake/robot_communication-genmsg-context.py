@@ -1,6 +1,6 @@
 # generated from genmsg/cmake/pkg-genmsg.context.in
 
-messages_str = "/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/src/robot_communication/msg/encoder_comm.msg;/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/src/robot_communication/msg/velocity_comm.msg"
+messages_str = "/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/src/robot_communication/msg/encoder_comm.msg;/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/src/robot_communication/msg/velocity_comm.msg;/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/src/robot_communication/msg/vision_pattern.msg"
 services_str = ""
 pkg_name = "robot_communication"
 dependencies_str = "std_msgs"

@@ -40,9 +40,9 @@ class velocity_comm {
   static serialize(obj, buffer, bufferOffset) {
     // Serializes a message object of type velocity_comm
     // Serialize message field [left_vel]
-    bufferOffset = _serializer.float64(obj.left_vel, buffer, bufferOffset);
+    bufferOffset = _serializer.float32(obj.left_vel, buffer, bufferOffset);
     // Serialize message field [right_vel]
-    bufferOffset = _serializer.float64(obj.right_vel, buffer, bufferOffset);
+    bufferOffset = _serializer.float32(obj.right_vel, buffer, bufferOffset);
     return bufferOffset;
   }
 
@@ -51,14 +51,14 @@ class velocity_comm {
     let len;
     let data = new velocity_comm(null);
     // Deserialize message field [left_vel]
-    data.left_vel = _deserializer.float64(buffer, bufferOffset);
+    data.left_vel = _deserializer.float32(buffer, bufferOffset);
     // Deserialize message field [right_vel]
-    data.right_vel = _deserializer.float64(buffer, bufferOffset);
+    data.right_vel = _deserializer.float32(buffer, bufferOffset);
     return data;
   }
 
   static getMessageSize(object) {
-    return 16;
+    return 8;
   }
 
   static datatype() {
@@ -68,15 +68,15 @@ class velocity_comm {
 
   static md5sum() {
     //Returns md5sum for a message object
-    return '6276768e5df1d6b78b96e63931fb03fc';
+    return '74ad8f7ea4d888606e4f41069cec47ff';
   }
 
   static messageDefinition() {
     // Returns full string definition for message
     return `
     # velocity_comm.msg
-    float64 left_vel
-    float64 right_vel
+    float32 left_vel
+    float32 right_vel
     `;
   }
 

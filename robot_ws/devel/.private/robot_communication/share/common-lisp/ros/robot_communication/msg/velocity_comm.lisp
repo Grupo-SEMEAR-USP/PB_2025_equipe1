@@ -38,24 +38,16 @@
   (right_vel m))
 (cl:defmethod roslisp-msg-protocol:serialize ((msg <velocity_comm>) ostream)
   "Serializes a message object of type '<velocity_comm>"
-  (cl:let ((bits (roslisp-utils:encode-double-float-bits (cl:slot-value msg 'left_vel))))
+  (cl:let ((bits (roslisp-utils:encode-single-float-bits (cl:slot-value msg 'left_vel))))
     (cl:write-byte (cl:ldb (cl:byte 8 0) bits) ostream)
     (cl:write-byte (cl:ldb (cl:byte 8 8) bits) ostream)
     (cl:write-byte (cl:ldb (cl:byte 8 16) bits) ostream)
-    (cl:write-byte (cl:ldb (cl:byte 8 24) bits) ostream)
-    (cl:write-byte (cl:ldb (cl:byte 8 32) bits) ostream)
-    (cl:write-byte (cl:ldb (cl:byte 8 40) bits) ostream)
-    (cl:write-byte (cl:ldb (cl:byte 8 48) bits) ostream)
-    (cl:write-byte (cl:ldb (cl:byte 8 56) bits) ostream))
-  (cl:let ((bits (roslisp-utils:encode-double-float-bits (cl:slot-value msg 'right_vel))))
+    (cl:write-byte (cl:ldb (cl:byte 8 24) bits) ostream))
+  (cl:let ((bits (roslisp-utils:encode-single-float-bits (cl:slot-value msg 'right_vel))))
     (cl:write-byte (cl:ldb (cl:byte 8 0) bits) ostream)
     (cl:write-byte (cl:ldb (cl:byte 8 8) bits) ostream)
     (cl:write-byte (cl:ldb (cl:byte 8 16) bits) ostream)
-    (cl:write-byte (cl:ldb (cl:byte 8 24) bits) ostream)
-    (cl:write-byte (cl:ldb (cl:byte 8 32) bits) ostream)
-    (cl:write-byte (cl:ldb (cl:byte 8 40) bits) ostream)
-    (cl:write-byte (cl:ldb (cl:byte 8 48) bits) ostream)
-    (cl:write-byte (cl:ldb (cl:byte 8 56) bits) ostream))
+    (cl:write-byte (cl:ldb (cl:byte 8 24) bits) ostream))
 )
 (cl:defmethod roslisp-msg-protocol:deserialize ((msg <velocity_comm>) istream)
   "Deserializes a message object of type '<velocity_comm>"
@@ -64,21 +56,13 @@
       (cl:setf (cl:ldb (cl:byte 8 8) bits) (cl:read-byte istream))
       (cl:setf (cl:ldb (cl:byte 8 16) bits) (cl:read-byte istream))
       (cl:setf (cl:ldb (cl:byte 8 24) bits) (cl:read-byte istream))
-      (cl:setf (cl:ldb (cl:byte 8 32) bits) (cl:read-byte istream))
-      (cl:setf (cl:ldb (cl:byte 8 40) bits) (cl:read-byte istream))
-      (cl:setf (cl:ldb (cl:byte 8 48) bits) (cl:read-byte istream))
-      (cl:setf (cl:ldb (cl:byte 8 56) bits) (cl:read-byte istream))
-    (cl:setf (cl:slot-value msg 'left_vel) (roslisp-utils:decode-double-float-bits bits)))
+    (cl:setf (cl:slot-value msg 'left_vel) (roslisp-utils:decode-single-float-bits bits)))
     (cl:let ((bits 0))
       (cl:setf (cl:ldb (cl:byte 8 0) bits) (cl:read-byte istream))
       (cl:setf (cl:ldb (cl:byte 8 8) bits) (cl:read-byte istream))
       (cl:setf (cl:ldb (cl:byte 8 16) bits) (cl:read-byte istream))
       (cl:setf (cl:ldb (cl:byte 8 24) bits) (cl:read-byte istream))
-      (cl:setf (cl:ldb (cl:byte 8 32) bits) (cl:read-byte istream))
-      (cl:setf (cl:ldb (cl:byte 8 40) bits) (cl:read-byte istream))
-      (cl:setf (cl:ldb (cl:byte 8 48) bits) (cl:read-byte istream))
-      (cl:setf (cl:ldb (cl:byte 8 56) bits) (cl:read-byte istream))
-    (cl:setf (cl:slot-value msg 'right_vel) (roslisp-utils:decode-double-float-bits bits)))
+    (cl:setf (cl:slot-value msg 'right_vel) (roslisp-utils:decode-single-float-bits bits)))
   msg
 )
 (cl:defmethod roslisp-msg-protocol:ros-datatype ((msg (cl:eql '<velocity_comm>)))
@@ -89,20 +73,20 @@
   "robot_communication/velocity_comm")
 (cl:defmethod roslisp-msg-protocol:md5sum ((type (cl:eql '<velocity_comm>)))
   "Returns md5sum for a message object of type '<velocity_comm>"
-  "6276768e5df1d6b78b96e63931fb03fc")
+  "74ad8f7ea4d888606e4f41069cec47ff")
 (cl:defmethod roslisp-msg-protocol:md5sum ((type (cl:eql 'velocity_comm)))
   "Returns md5sum for a message object of type 'velocity_comm"
-  "6276768e5df1d6b78b96e63931fb03fc")
+  "74ad8f7ea4d888606e4f41069cec47ff")
 (cl:defmethod roslisp-msg-protocol:message-definition ((type (cl:eql '<velocity_comm>)))
   "Returns full string definition for message of type '<velocity_comm>"
-  (cl:format cl:nil "# velocity_comm.msg~%float64 left_vel~%float64 right_vel~%~%"))
+  (cl:format cl:nil "# velocity_comm.msg~%float32 left_vel~%float32 right_vel~%~%"))
 (cl:defmethod roslisp-msg-protocol:message-definition ((type (cl:eql 'velocity_comm)))
   "Returns full string definition for message of type 'velocity_comm"
-  (cl:format cl:nil "# velocity_comm.msg~%float64 left_vel~%float64 right_vel~%~%"))
+  (cl:format cl:nil "# velocity_comm.msg~%float32 left_vel~%float32 right_vel~%~%"))
 (cl:defmethod roslisp-msg-protocol:serialization-length ((msg <velocity_comm>))
   (cl:+ 0
-     8
-     8
+     4
+     4
 ))
 (cl:defmethod roslisp-msg-protocol:ros-message-to-list ((msg <velocity_comm>))
   "Converts a ROS message object to a list"

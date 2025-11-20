@@ -1,6 +1,6 @@
 # generated from genmsg/cmake/pkg-genmsg.cmake.em
 
-message(STATUS "robot_communication: 2 messages, 0 services")
+message(STATUS "robot_communication: 3 messages, 0 services")
 
 set(MSG_I_FLAGS "-Irobot_communication:/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/src/robot_communication/msg;-Istd_msgs:/opt/ros/noetic/share/std_msgs/cmake/../msg")
 
@@ -27,6 +27,11 @@ add_custom_target(_robot_communication_generate_messages_check_deps_${_filename}
   COMMAND ${CATKIN_ENV} ${PYTHON_EXECUTABLE} ${GENMSG_CHECK_DEPS_SCRIPT} "robot_communication" "/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/src/robot_communication/msg/velocity_comm.msg" ""
 )
 
+get_filename_component(_filename "/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/src/robot_communication/msg/vision_pattern.msg" NAME_WE)
+add_custom_target(_robot_communication_generate_messages_check_deps_${_filename}
+  COMMAND ${CATKIN_ENV} ${PYTHON_EXECUTABLE} ${GENMSG_CHECK_DEPS_SCRIPT} "robot_communication" "/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/src/robot_communication/msg/vision_pattern.msg" ""
+)
+
 #
 #  langs = gencpp;geneus;genlisp;gennodejs;genpy
 #
@@ -41,6 +46,12 @@ _generate_msg_cpp(robot_communication
 )
 _generate_msg_cpp(robot_communication
   "/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/src/robot_communication/msg/velocity_comm.msg"
+  "${MSG_I_FLAGS}"
+  ""
+  ${CATKIN_DEVEL_PREFIX}/${gencpp_INSTALL_DIR}/robot_communication
+)
+_generate_msg_cpp(robot_communication
+  "/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/src/robot_communication/msg/vision_pattern.msg"
   "${MSG_I_FLAGS}"
   ""
   ${CATKIN_DEVEL_PREFIX}/${gencpp_INSTALL_DIR}/robot_communication
@@ -64,6 +75,8 @@ get_filename_component(_filename "/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/s
 add_dependencies(robot_communication_generate_messages_cpp _robot_communication_generate_messages_check_deps_${_filename})
 get_filename_component(_filename "/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/src/robot_communication/msg/velocity_comm.msg" NAME_WE)
 add_dependencies(robot_communication_generate_messages_cpp _robot_communication_generate_messages_check_deps_${_filename})
+get_filename_component(_filename "/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/src/robot_communication/msg/vision_pattern.msg" NAME_WE)
+add_dependencies(robot_communication_generate_messages_cpp _robot_communication_generate_messages_check_deps_${_filename})
 
 # target for backward compatibility
 add_custom_target(robot_communication_gencpp)
@@ -82,6 +95,12 @@ _generate_msg_eus(robot_communication
 )
 _generate_msg_eus(robot_communication
   "/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/src/robot_communication/msg/velocity_comm.msg"
+  "${MSG_I_FLAGS}"
+  ""
+  ${CATKIN_DEVEL_PREFIX}/${geneus_INSTALL_DIR}/robot_communication
+)
+_generate_msg_eus(robot_communication
+  "/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/src/robot_communication/msg/vision_pattern.msg"
   "${MSG_I_FLAGS}"
   ""
   ${CATKIN_DEVEL_PREFIX}/${geneus_INSTALL_DIR}/robot_communication
@@ -105,6 +124,8 @@ get_filename_component(_filename "/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/s
 add_dependencies(robot_communication_generate_messages_eus _robot_communication_generate_messages_check_deps_${_filename})
 get_filename_component(_filename "/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/src/robot_communication/msg/velocity_comm.msg" NAME_WE)
 add_dependencies(robot_communication_generate_messages_eus _robot_communication_generate_messages_check_deps_${_filename})
+get_filename_component(_filename "/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/src/robot_communication/msg/vision_pattern.msg" NAME_WE)
+add_dependencies(robot_communication_generate_messages_eus _robot_communication_generate_messages_check_deps_${_filename})
 
 # target for backward compatibility
 add_custom_target(robot_communication_geneus)
@@ -123,6 +144,12 @@ _generate_msg_lisp(robot_communication
 )
 _generate_msg_lisp(robot_communication
   "/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/src/robot_communication/msg/velocity_comm.msg"
+  "${MSG_I_FLAGS}"
+  ""
+  ${CATKIN_DEVEL_PREFIX}/${genlisp_INSTALL_DIR}/robot_communication
+)
+_generate_msg_lisp(robot_communication
+  "/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/src/robot_communication/msg/vision_pattern.msg"
   "${MSG_I_FLAGS}"
   ""
   ${CATKIN_DEVEL_PREFIX}/${genlisp_INSTALL_DIR}/robot_communication
@@ -146,6 +173,8 @@ get_filename_component(_filename "/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/s
 add_dependencies(robot_communication_generate_messages_lisp _robot_communication_generate_messages_check_deps_${_filename})
 get_filename_component(_filename "/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/src/robot_communication/msg/velocity_comm.msg" NAME_WE)
 add_dependencies(robot_communication_generate_messages_lisp _robot_communication_generate_messages_check_deps_${_filename})
+get_filename_component(_filename "/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/src/robot_communication/msg/vision_pattern.msg" NAME_WE)
+add_dependencies(robot_communication_generate_messages_lisp _robot_communication_generate_messages_check_deps_${_filename})
 
 # target for backward compatibility
 add_custom_target(robot_communication_genlisp)
@@ -164,6 +193,12 @@ _generate_msg_nodejs(robot_communication
 )
 _generate_msg_nodejs(robot_communication
   "/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/src/robot_communication/msg/velocity_comm.msg"
+  "${MSG_I_FLAGS}"
+  ""
+  ${CATKIN_DEVEL_PREFIX}/${gennodejs_INSTALL_DIR}/robot_communication
+)
+_generate_msg_nodejs(robot_communication
+  "/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/src/robot_communication/msg/vision_pattern.msg"
   "${MSG_I_FLAGS}"
   ""
   ${CATKIN_DEVEL_PREFIX}/${gennodejs_INSTALL_DIR}/robot_communication
@@ -187,6 +222,8 @@ get_filename_component(_filename "/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/s
 add_dependencies(robot_communication_generate_messages_nodejs _robot_communication_generate_messages_check_deps_${_filename})
 get_filename_component(_filename "/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/src/robot_communication/msg/velocity_comm.msg" NAME_WE)
 add_dependencies(robot_communication_generate_messages_nodejs _robot_communication_generate_messages_check_deps_${_filename})
+get_filename_component(_filename "/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/src/robot_communication/msg/vision_pattern.msg" NAME_WE)
+add_dependencies(robot_communication_generate_messages_nodejs _robot_communication_generate_messages_check_deps_${_filename})
 
 # target for backward compatibility
 add_custom_target(robot_communication_gennodejs)
@@ -209,6 +246,12 @@ _generate_msg_py(robot_communication
   ""
   ${CATKIN_DEVEL_PREFIX}/${genpy_INSTALL_DIR}/robot_communication
 )
+_generate_msg_py(robot_communication
+  "/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/src/robot_communication/msg/vision_pattern.msg"
+  "${MSG_I_FLAGS}"
+  ""
+  ${CATKIN_DEVEL_PREFIX}/${genpy_INSTALL_DIR}/robot_communication
+)
 
 ### Generating Services
 
@@ -227,6 +270,8 @@ add_dependencies(robot_communication_generate_messages robot_communication_gener
 get_filename_component(_filename "/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/src/robot_communication/msg/encoder_comm.msg" NAME_WE)
 add_dependencies(robot_communication_generate_messages_py _robot_communication_generate_messages_check_deps_${_filename})
 get_filename_component(_filename "/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/src/robot_communication/msg/velocity_comm.msg" NAME_WE)
+add_dependencies(robot_communication_generate_messages_py _robot_communication_generate_messages_check_deps_${_filename})
+get_filename_component(_filename "/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/src/robot_communication/msg/vision_pattern.msg" NAME_WE)
 add_dependencies(robot_communication_generate_messages_py _robot_communication_generate_messages_check_deps_${_filename})
 
 # target for backward compatibility
