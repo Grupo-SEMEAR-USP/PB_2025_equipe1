@@ -1,0 +1,5 @@
+<launch>
+  <include file="$(find robot_movement)/launch/movement.launch"/>
+
+  <include file="$(find robot_communication)/launch/communication.launch"/>
+</launch>
