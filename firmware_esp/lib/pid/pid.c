@@ -1,21 +1,44 @@
 #include "pid.h"
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
+#include "encoder.h"
+#include "h_bridge.h"
+#include "def.h"
+#include "esp_log.h"
 
-/* Definições essenciais */
-float TARGET_VALUE_L = 0;
-float TARGET_VALUE_R = 0;
+/* Limites de Controle */
+// Para a ação de controle (PWM)
+#define Max_Output LEDC_MAX_DUTY
+#define Min_Output -LEDC_MAX_DUTY
+// Para evitar wind-up do integrador
+#define Max_integral 1000
+#define Min_integral -1000
 
-int ENCODER_READ_L = 0;
-int ENCODER_READ_R = 0;
+/* Parâmetros do controlador */
+// Motor Esquerdo
+#define KP_L 150.0f 
+#define KI_L 10.0f   
+#define KD_L 5.0f
+// #define TICKS_TO_RADS_LEFT (PI*2*(1000/CNTRL_PERIOD_MS))/1321 // Fator de conversão entre ticks do encoder para RPM
+#define TICKS_TO_RADS_LEFT 0.01570
 
-float RADS_L = 0;
-float RADS_R = 0;
+// Motor Direito
+#define KP_R 150.0f    
+#define KI_R 10.0f     
+#define KD_R 5.0f 
+// #define TICKS_TO_RADS_RIGHT (PI*2*(1000/CNTRL_PERIOD_MS))/1321 // Fator de conversão entre ticks do encoder para RPM
+#define TICKS_TO_RADS_RIGHT 0.01570
 
-float LEFT_PWM_VALUE = 0;
-float RIGHT_PWM_VALUE = 0;
+/* Macros */
+#define PID_SIDE_KP(SIDE) ((SIDE) == PID_LEFT ? KP_L : KP_R)
+#define PID_SIDE_KI(SIDE) ((SIDE) == PID_LEFT ? KI_L : KI_R)
+#define PID_SIDE_KD(SIDE) ((SIDE) == PID_LEFT ? KD_L : KD_R)
+#define PID_TICKS_TO_RADS(SIDE) ((SIDE) == PID_LEFT ? TICKS_TO_RADS_LEFT : TICKS_TO_RADS_RIGHT)
 
-bool BREAK_FLAG = false;
+static const char *TAG = "PID";
+
+static void PWM_limit(float *PWM) {
+  *PWM = (*PWM > Max_Output) ? Max_Output : *PWM;
+  *PWM = (*PWM < Min_Output) ? Min_Output : *PWM;
+}
 
 pid_ctrl_block_handle_t init_pid(pid_side_t side) {
 
@@ -41,57 +64,37 @@ pid_ctrl_block_handle_t init_pid(pid_side_t side) {
   return pid_block;
 }
 
-void PWM_limit(float *PWM) {
-  *PWM = (*PWM > Max_Output) ? Max_Output : *PWM;
-  *PWM = (*PWM < Min_Output) ? Min_Output : *PWM;
-}
+esp_err_t pid_calculate(pid_ctrl_block_handle_t pid_l, pid_ctrl_block_handle_t pid_r, pcnt_unit_handle_t encoder_l, pcnt_unit_handle_t encoder_r) {
+  float value_pid_L = 0;
+  float value_pid_R = 0;
 
-esp_err_t pid_calculate(pid_ctrl_block_handle_t pid_block_L, pid_ctrl_block_handle_t pid_block_R) {
-  float controll_pid_LEFT = 0;
-  float controll_pid_RIGHT = 0;
+  G_ENC_L = get_encoder_vel(encoder_l);
+  G_ENC_R = get_encoder_vel(encoder_r);
 
-   while(1) {
+  G_RADS_L = G_ENC_L * PID_TICKS_TO_RADS(PID_LEFT);
+  G_RADS_R = G_ENC_R * PID_TICKS_TO_RADS(PID_RIGHT);
 
-    ENCODER_READ_L = get_encoder_count(ENC_LEFT);
-    ENCODER_READ_R = get_encoder_count(ENC_RIGHT);
+  if(G_TARGET_L == 0 && G_TARGET_R == 0 && BREAK_FLAG) {
+    G_PWM_L = 0;
+    G_PWM_R = 0;
+  } else {
+    float error_L = (G_TARGET_L - G_RADS_L);
+    float error_R = (G_TARGET_R - G_RADS_R);
 
-    RADS_L = ENCODER_READ_L * PID_TICKS_TO_RADS(PID_LEFT);
-    RADS_R = ENCODER_READ_R * PID_TICKS_TO_RADS(PID_RIGHT);
-
-    if(TARGET_VALUE_L == 0 && TARGET_VALUE_R == 0 && BREAK_FLAG) {
-      LEFT_PWM_VALUE = 0;
-      RIGHT_PWM_VALUE = 0;
-    }
-
-    else{
-      float error_motor_LEFT = (TARGET_VALUE_L - RADS_L);
-      float error_motor_RIGHT = (TARGET_VALUE_R - RADS_R);
-
-      pid_compute(pid_block_L, error_motor_LEFT, &controll_pid_LEFT);
-      pid_compute(pid_block_R, error_motor_RIGHT, &controll_pid_RIGHT);
-
-      LEFT_PWM_VALUE += controll_pid_LEFT;
-      RIGHT_PWM_VALUE += controll_pid_RIGHT;
-
-      PWM_limit(&LEFT_PWM_VALUE);
-      PWM_limit(&RIGHT_PWM_VALUE);
-    }
-
-      // ESP_LOGI("PID_DEBUG_L", "Target:%.2f | Atual:%.2f | Erro:%.2f | PWM:%.0f",
-      //    TARGET_VALUE_L, RADS_L, (TARGET_VALUE_L - RADS_L), LEFT_PWM_VALUE);
-      // ESP_LOGI("PID_DEBUG_R", "Target:%.2f | Atual:%.2f | Erro:%.2f | PWM:%.0f",
-      //    TARGET_VALUE_R, RADS_R, (TARGET_VALUE_R - RADS_R), RIGHT_PWM_VALUE);
+    pid_compute(pid_l, error_L, &value_pid_L);
+    pid_compute(pid_r, error_R, &value_pid_R);
     
+    G_PWM_L += value_pid_L;
+    G_PWM_R += value_pid_R;
 
-      update_motor(MOTOR_LEFT, LEFT_PWM_VALUE);
-      update_motor(MOTOR_RIGHT, RIGHT_PWM_VALUE);
+    PWM_limit(&G_PWM_L);
+    PWM_limit(&G_PWM_R);
+  }
 
-      controll_pid_LEFT = 0;
-      controll_pid_RIGHT = 0;
-
-      vTaskDelay(pdMS_TO_TICKS(PERIOD));
-    
-   }
+  // ESP_LOGI(TAG, "Target:%.2f | Atual:%.2f | Erro:%.2f | PWM:%.0f", 
+  //   G_TARGET_L, G_RADS_L, (G_TARGET_L - G_RADS_L), G_PWM_L);
+  // ESP_LOGI(TAG, "Target:%.2f | Atual:%.2f | Erro:%.2f | PWM:%.0f",
+  //   G_TARGET_R, G_RADS_R, (G_TARGET_R - G_RADS_R), G_PWM_R);
 
   return ESP_OK;
 }

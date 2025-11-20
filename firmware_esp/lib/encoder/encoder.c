@@ -1,13 +1,17 @@
 #include "encoder.h"
+#include "esp_log.h"
+#include "esp_err.h"
+#include "def.h"
 
-// Variável global para o handle das unidades PCNT
-static pcnt_unit_handle_t right_encoder = NULL;
-static pcnt_unit_handle_t left_encoder = NULL;
+/* Macros */
+#define ENCODER_A(SIDE) ((SIDE) == (ENC_LEFT) ? ENCODER_GPIO_LA : ENCODER_GPIO_RA)
+#define ENCODER_B(SIDE) ((SIDE) == (ENC_LEFT) ? ENCODER_GPIO_LB : ENCODER_GPIO_RB)
 
-#define ENC_SIDE(SIDE) ((SIDE) == ENC_LEFT ? left_encoder : right_encoder)
+static const char *TAG = "ENCODER";
 
-esp_err_t init_encoder(encoder_side_t side){
+pcnt_unit_handle_t init_encoder(encoder_side_t side){
     pcnt_unit_handle_t side_handler = NULL;
+    
     // Define o planejamento do gerente da contagem do PCNT
     pcnt_unit_config_t unit_config = {
         .high_limit = PCNT_HIGH_LIMIT,
@@ -50,25 +54,15 @@ esp_err_t init_encoder(encoder_side_t side){
     ESP_ERROR_CHECK(pcnt_unit_clear_count(side_handler));
     ESP_ERROR_CHECK(pcnt_unit_start(side_handler));
 
-    // Atribui o handle à variável global correta
-    if (side == ENC_LEFT) {
-        left_encoder = side_handler;
-    } else {
-        right_encoder = side_handler;
-    }
-
-    return ESP_OK;
+    return side_handler;
 }
 
-// Função para obter a contagem atual
-int get_encoder_count(encoder_side_t side){
+// Função para obter a variação de contagem atual (velocidade)
+int get_encoder_vel(pcnt_unit_handle_t handler){
     int count = 0; // Definindo variável temporária para armazenar a contagem
-    ESP_ERROR_CHECK(pcnt_unit_get_count(ENC_SIDE(side), &count));
-    reset_encoder_count(side);
-    return count;
-}
 
-// Função para zerar o contador
-void reset_encoder_count(encoder_side_t side){
-    pcnt_unit_clear_count(ENC_SIDE(side));
+    ESP_ERROR_CHECK(pcnt_unit_get_count(handler, &count));
+    pcnt_unit_clear_count(handler);
+    
+    return count;
 }

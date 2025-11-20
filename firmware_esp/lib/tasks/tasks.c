@@ -1,0 +1,130 @@
+#include "tasks.h"
+
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/semphr.h"
+#include "esp_log.h"
+#include "nvs_flash.h"
+
+#include "uart_communication.h"
+#include "def.h"           
+#include "encoder.h"
+#include "h_bridge.h"
+#include "pid.h"
+
+/* Configurações de Tempo (em ms) */
+#define PERIOD_COMM_MS    20  // 50 Hz
+#define PERIOD_CONTROL_MS 50  // 20 Hz
+
+/* Mutex para proteção de dados compartilhados */
+static SemaphoreHandle_t xDataMutex = NULL;
+
+/* Tags de Log */
+static const char *COMM_TAG = "UART_TASK";
+static const char *ACT_TAG = "ACT_TASK";
+static const char *TAG = "TASKS";
+
+void uart_task(void *pvParameters) {
+    esp_err_t ret;
+    ESP_LOGI(COMM_TAG, "Inicializando comunicação serial (UART0/USB)");
+    ret = uart_init();
+    if (ret != ESP_OK) {
+        ESP_LOGE(COMM_TAG, "Falha catastrofica ao iniciar a UART. Deleta Task");
+        vTaskDelete(NULL); 
+        return;
+    }
+    ESP_LOGI(COMM_TAG, "Comunicação serial inicializada.");
+
+    while(1){
+        uart_read();
+        if (xDataMutex != NULL) {   
+            if (xSemaphoreTake(xDataMutex, pdMS_TO_TICKS(10)) == pdTRUE) {
+                // Atualizando globais de comando
+                G_TARGET_L = G_CMD.left_data;
+                G_TARGET_R = G_CMD.right_data;
+                
+                // Lendo globais de feedback para enviar
+                float send_l = G_RADS_L;
+                float send_r = G_RADS_R;
+
+                xSemaphoreGive(xDataMutex); // Libera o mutex
+                
+                // Envia as cópias
+                uart_send(send_l, send_r);
+            }
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(PERIOD_COMM_MS));
+    }
+}
+
+void actuators_task(void *pvParameters) {
+    ESP_LOGI(ACT_TAG, "Inicializando módulos de hardware");
+    init_h_bridge(MOTOR_RIGHT);
+    init_h_bridge(MOTOR_LEFT);
+
+
+    pcnt_unit_handle_t encoder_unit_r = init_encoder(ENC_RIGHT);
+    pcnt_unit_handle_t encoder_unit_l = init_encoder(ENC_LEFT);
+
+    ESP_LOGI(ACT_TAG, "Inicializando controladores PID");
+    pid_ctrl_block_handle_t pid_block_r = init_pid(PID_RIGHT);
+    pid_ctrl_block_handle_t pid_block_l = init_pid(PID_LEFT);
+
+    // Variável para manter o tempo de execução periódico
+    TickType_t xLastWakeTime;
+    const TickType_t xFrequency = pdMS_TO_TICKS(PERIOD_CONTROL_MS);
+    xLastWakeTime = xTaskGetTickCount();
+
+    // Inserção manual
+    // G_TARGET_L = 40.0f;
+    // G_TARGET_R = 40.0f;
+
+    while(1) {
+        vTaskDelayUntil(&xLastWakeTime, xFrequency);
+
+        if (xDataMutex != NULL) {
+            if (xSemaphoreTake(xDataMutex, pdMS_TO_TICKS(5)) == pdTRUE) {
+                               
+                // Como pid_calculate usa as globais G_TARGET e G_RADS, é necessário proteger sua execução
+                pid_calculate(pid_block_l, pid_block_r, encoder_unit_l, encoder_unit_r);
+                
+                xSemaphoreGive(xDataMutex);
+            }
+        }
+
+        update_motor(MOTOR_LEFT, G_PWM_L);
+        update_motor(MOTOR_RIGHT, G_PWM_R);
+
+        // Debug
+        // ESP_LOGI(ACT_TAG, "Status: L_Target=%.2f | L_Rads=%.2f | PWM_L=%.0f", 
+        //     G_TARGET_L, G_RADS_L, G_PWM_L);
+        // ESP_LOGI(ACT_TAG, "Status: R_Target=%.2f | R_Rads=%.2f | PWM_R=%.0f", 
+        //     G_TARGET_R, G_RADS_R, G_PWM_R);
+    }
+}
+
+esp_err_t init_tasks() {
+    // Criar o Mutex
+    xDataMutex = xSemaphoreCreateMutex();
+    if (xDataMutex == NULL) {
+        ESP_LOGE(TAG, "Erro ao criar Mutex");
+        return ESP_FAIL;
+    }
+
+    // Limpa o nvs_flash e inicializa
+    esp_err_t ret = nvs_flash_init();
+    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        ret = nvs_flash_init();
+    }
+    ESP_ERROR_CHECK(ret);
+    ESP_LOGI(TAG, "NVS inicializado.");
+
+    // Task 1 (core 0): comunicação
+    xTaskCreatePinnedToCore(uart_task, "uart_task", 4096, NULL, 5, NULL, 0);
+    // Task 2 (core 1): atuação
+    xTaskCreatePinnedToCore(actuators_task, "actuators_task", 4096, NULL, 5, NULL, 1);
+
+    return ESP_OK;
+}

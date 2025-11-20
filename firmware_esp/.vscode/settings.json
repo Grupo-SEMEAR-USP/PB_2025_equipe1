@@ -2,6 +2,11 @@
     "files.associations": {
         "gpio.h": "c",
         "encoder.h": "c",
-        "pulse_cnt.h": "c"
+        "pulse_cnt.h": "c",
+        "h_bridge.h": "c",
+        "esp_err.h": "c",
+        "uart_communication.h": "c",
+        "esp_log.h": "c",
+        "pid.h": "c"
     }
 }
