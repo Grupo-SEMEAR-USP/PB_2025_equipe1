@@ -17,6 +17,7 @@ add_message_files(
   FILES
   encoder_comm.msg
   velocity_comm.msg
+  vision_pattern.msg
 )
 
 ## Generate added messages and services with any dependencies listed here
@@ -43,6 +44,7 @@ catkin_package(
 ## Mark executable scripts (Python etc.) for installation
 catkin_install_python(PROGRAMS
   scripts/mqtt_comm.py
+  scripts/uart_bridge.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
