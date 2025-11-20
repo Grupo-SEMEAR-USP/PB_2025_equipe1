@@ -1,3 +1,4 @@
 <launch>
-  <node name="mqtt_comm" pkg="robot_communication" type="mqtt_comm.py" output="screen"/> 
+  <!-- <node name="mqtt_comm" pkg="robot_communication" type="mqtt_comm.py" output="screen"/>  -->
+  <node name="uart_comm" pkg="robot_communication" type="uart_comm.py" output="screen"/>
 </launch>
