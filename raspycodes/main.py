@@ -1,28 +1,49 @@
-import serial_com 
-import threading
 
-#thread de Leitura
-def PortReading():
-    while True:
-        log = serial_com.read_serial()
-        if log:
-            print(log)
 
-#Thread de Escrita
-def PortWriting():
+import cv2
+import Imgpross  
+
+def run_lane_detection():
+
+    cap = cv2.VideoCapture(0) 
+
+    if not cap.isOpened():
+        print("Erro fatal: Não foi possível abrir nenhuma câmera. Verifique as conexões.")
+        return
+
     while True:
-        word = input("Digite algo (ou 'exit' para sair): ")
-        if word.lower() == "exit":
+        ret, frame_original = cap.read()
+        
+        if not ret:
+            print("Erro: Não foi possível ler o frame da câmera.")
             break
-        serial_com.write_serial(word)
+
+        try:
+            dados_processados, img_marcada = Imgpross.processar_frame(frame_original)
+            
+            dist_centro = dados_processados.get('distancia_centro', 'N/A')
+            raio_curva = dados_processados.get('curvatura_raio', 'N/A')
+            direcao = dados_processados.get('Direca o', 'N/A')
 
 
-# Criando threads
-t1 = threading.Thread(target=PortReading, daemon=True)  # daemon = fecha junto com main
-t2 = threading.Thread(target=PortWriting)
+            print(f"Distância do Centro: {dist_centro} | Raio de Curvatura: {raio_curva} | Direção: {direcao}   ", end="\r")
 
-# Iniciando
-t1.start()
-t2.start()
+            cv2.imshow("Detecção de Faixa - Processado", img_marcada)
 
-t2.join()  # só espera a thread de escrita, leitura roda em background
+        except Exception as e:
+            print(f"Erro no processamento: {e}")
+            cv2.imshow("Detecção de Faixa - Erro", frame_original)
+
+
+        #Saída (pressionar 'q')
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            print("\nEncerrando o programa...")
+            break
+
+
+    cap.release()
+    cv2.destroyAllWindows()
+
+
+if __name__ == "__main__":
+    run_lane_detection()
