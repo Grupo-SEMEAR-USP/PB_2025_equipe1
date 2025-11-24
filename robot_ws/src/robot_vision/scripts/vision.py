@@ -30,14 +30,14 @@ class RobotVision:
         cap = cv2.VideoCapture(0) 
 
         if not cap.isOpened():
-            print("Erro fatal: Não foi possível abrir nenhuma câmera. Verifique as conexões.")
+            rospy.logwarn("Erro fatal: Não foi possível abrir nenhuma câmera. Verifique as conexões.")
             return
 
         while True:
             ret, frame_original = cap.read()
             
             if not ret:
-                print("Erro: Não foi possível ler o frame da câmera.")
+                rospy.logwarn("Erro: Não foi possível ler o frame da câmera.")
                 break
 
             try:
@@ -45,8 +45,7 @@ class RobotVision:
                 cv2.imshow("Detecção de Faixa - Processado", frame_original)
 
             except Exception as e:
-                print(f"Erro no processamento: {e}")
-                cv2.imshow("Detecção de Faixa - Erro", frame_original)
+                rospy.logwarn(f"Erro no processamento: {e}")
 
 
     def process_frame(self, frame):
