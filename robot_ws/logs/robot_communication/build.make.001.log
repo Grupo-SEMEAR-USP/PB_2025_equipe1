@@ -1,0 +1,14 @@
+[  0%] Built target std_msgs_generate_messages_lisp
+[  0%] Built target std_msgs_generate_messages_py
+[  0%] Built target std_msgs_generate_messages_nodejs
+[  0%] Built target std_msgs_generate_messages_cpp
+[  0%] Built target std_msgs_generate_messages_eus
+[  0%] Built target _robot_communication_generate_messages_check_deps_encoder_comm
+[  0%] Built target _robot_communication_generate_messages_check_deps_vision_pattern
+[  0%] Built target _robot_communication_generate_messages_check_deps_velocity_comm
+[ 17%] Built target robot_communication_generate_messages_lisp
+[ 35%] Built target robot_communication_generate_messages_nodejs
+[ 58%] Built target robot_communication_generate_messages_py
+[100%] Built target robot_communication_generate_messages_eus
+[100%] Built target robot_communication_generate_messages_cpp
+[100%] Built target robot_communication_generate_messages
