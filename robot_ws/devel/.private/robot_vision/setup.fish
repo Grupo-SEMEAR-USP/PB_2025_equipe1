@@ -18,7 +18,7 @@ if not type -q bass
 end
 
 if test -z $_CATKIN_SETUP_DIR
-    set _CATKIN_SETUP_DIR /home/rosUsr/Shared/PB_2025_equipe1/robot_ws/devel/.private/robot_vision
+    set _CATKIN_SETUP_DIR /home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/devel/.private/robot_vision
 end
 
 set _SETUP_UTIL "$_CATKIN_SETUP_DIR/_setup_util.py"

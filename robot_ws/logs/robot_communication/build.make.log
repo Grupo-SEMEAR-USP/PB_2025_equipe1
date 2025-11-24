@@ -1,45 +1,14 @@
-[35m[1mScanning dependencies of target std_msgs_generate_messages_eus[0m
-[35m[1mScanning dependencies of target std_msgs_generate_messages_nodejs[0m
-[35m[1mScanning dependencies of target _robot_communication_generate_messages_check_deps_velocity_comm[0m
-[35m[1mScanning dependencies of target _robot_communication_generate_messages_check_deps_encoder_comm[0m
-[35m[1mScanning dependencies of target std_msgs_generate_messages_py[0m
-[35m[1mScanning dependencies of target std_msgs_generate_messages_lisp[0m
-[35m[1mScanning dependencies of target _robot_communication_generate_messages_check_deps_vision_pattern[0m
-[35m[1mScanning dependencies of target std_msgs_generate_messages_cpp[0m
-[  0%] Built target std_msgs_generate_messages_nodejs
-[  0%] Built target std_msgs_generate_messages_eus
-[  0%] Built target std_msgs_generate_messages_py
 [  0%] Built target std_msgs_generate_messages_lisp
+[  0%] Built target std_msgs_generate_messages_py
+[  0%] Built target std_msgs_generate_messages_nodejs
 [  0%] Built target std_msgs_generate_messages_cpp
-[  0%] Built target _robot_communication_generate_messages_check_deps_velocity_comm
+[  0%] Built target std_msgs_generate_messages_eus
 [  0%] Built target _robot_communication_generate_messages_check_deps_encoder_comm
 [  0%] Built target _robot_communication_generate_messages_check_deps_vision_pattern
-[35m[1mScanning dependencies of target robot_communication_generate_messages_eus[0m
-[35m[1mScanning dependencies of target robot_communication_generate_messages_lisp[0m
-[35m[1mScanning dependencies of target robot_communication_generate_messages_nodejs[0m
-[35m[1mScanning dependencies of target robot_communication_generate_messages_cpp[0m
-[35m[1mScanning dependencies of target robot_communication_generate_messages_py[0m
-[ 23%] [34m[1mGenerating Lisp code from robot_communication/velocity_comm.msg[0m
-[ 23%] [34m[1mGenerating Lisp code from robot_communication/encoder_comm.msg[0m
-[ 23%] [34m[1mGenerating Javascript code from robot_communication/encoder_comm.msg[0m
-[ 23%] [34m[1mGenerating EusLisp code from robot_communication/encoder_comm.msg[0m
-[ 29%] [34m[1mGenerating Javascript code from robot_communication/velocity_comm.msg[0m
-[ 41%] [34m[1mGenerating C++ code from robot_communication/encoder_comm.msg[0m
-[ 41%] [34m[1mGenerating EusLisp code from robot_communication/velocity_comm.msg[0m
-[ 47%] [34m[1mGenerating Python from MSG robot_communication/encoder_comm[0m
-[ 52%] [34m[1mGenerating Python from MSG robot_communication/velocity_comm[0m
-[ 58%] [34m[1mGenerating Lisp code from robot_communication/vision_pattern.msg[0m
-[ 64%] [34m[1mGenerating EusLisp code from robot_communication/vision_pattern.msg[0m
-[ 70%] [34m[1mGenerating Javascript code from robot_communication/vision_pattern.msg[0m
-[ 76%] [34m[1mGenerating Python from MSG robot_communication/vision_pattern[0m
-[ 82%] [34m[1mGenerating C++ code from robot_communication/velocity_comm.msg[0m
-[ 82%] Built target robot_communication_generate_messages_lisp
-[ 82%] Built target robot_communication_generate_messages_nodejs
-[ 88%] [34m[1mGenerating EusLisp manifest code for robot_communication[0m
-[ 94%] [34m[1mGenerating C++ code from robot_communication/vision_pattern.msg[0m
-[100%] [34m[1mGenerating Python msg __init__.py for robot_communication[0m
-[100%] Built target robot_communication_generate_messages_cpp
-[100%] Built target robot_communication_generate_messages_py
+[  0%] Built target _robot_communication_generate_messages_check_deps_velocity_comm
+[ 17%] Built target robot_communication_generate_messages_lisp
+[ 35%] Built target robot_communication_generate_messages_nodejs
+[ 58%] Built target robot_communication_generate_messages_py
 [100%] Built target robot_communication_generate_messages_eus
-[35m[1mScanning dependencies of target robot_communication_generate_messages[0m
+[100%] Built target robot_communication_generate_messages_cpp
 [100%] Built target robot_communication_generate_messages

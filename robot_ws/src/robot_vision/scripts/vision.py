@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 import threading
 
-from robot_vision.msg import vision_pattern
+from robot_communication.msg import vision_pattern
 
 # --- PARÂMETROS GLOBAIS (AJUSTAR ESTES VALORES) ---
 
@@ -22,39 +22,32 @@ class RobotVision:
     def __init__(self):
         # Inicialização dos parâmetros e subscritores/publicadores ROS
         self.vision_pub = rospy.Publisher('/vision', vision_pattern, queue_size=10)
-        self.cam = cv2.VideoCapture(0)
-
-        if not self.cam.isOpened():
-            rospy.logerr("Erro fatal: Não foi possível abrir nenhuma câmera. Verifique as conexões.")
-            return
-
-        #definindo dados de visão
-        self.vision_data = {
-            'center_distance': 0.0,
-            'curvature_radius': 0.0,
-        }
 
         self.thread = threading.Thread(target=self.camera_loop, daemon=True)
         self.thread.start()
 
     def camera_loop(self):
-     
-        while not rospy.is_shutdown():
-            ret, frame = self.cam.read()
+        cap = cv2.VideoCapture(0) 
 
+        if not cap.isOpened():
+            print("Erro fatal: Não foi possível abrir nenhuma câmera. Verifique as conexões.")
+            return
+
+        while True:
+            ret, frame_original = cap.read()
+            
             if not ret:
-                rospy.logerr("Erro: Não foi possível ler o frame da câmera.")
+                print("Erro: Não foi possível ler o frame da câmera.")
                 break
 
-            self.process_frame(frame)
+            try:
 
-            # Publicar dados de visão
-            vision_msg = vision_pattern()
-            vision_msg.center_distance = self.vision_data['center_distance']
-            vision_msg.curvature_radius = self.vision_data['curvature_radius']
-            self.vision_pub.publish(vision_msg)
+                cv2.imshow("Detecção de Faixa - Processado", frame_original)
 
-        self.cam.release()
+            except Exception as e:
+                print(f"Erro no processamento: {e}")
+                cv2.imshow("Detecção de Faixa - Erro", frame_original)
+
 
     def process_frame(self, frame):
         # Processamento do frame para detecção de faixas
@@ -150,6 +143,7 @@ class RobotVision:
         leftx_current = leftx_base
         rightx_current = rightx_base
 
+
         left_lane_inds = []
         right_lane_inds = []
 
@@ -168,8 +162,9 @@ class RobotVision:
             good_right_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) &
                                (nonzerox >= win_xright_low) & (nonzerox < win_xright_high)).nonzero()[0]
 
-            left_lane_inds.append(good_left_inds)
-            right_lane_inds.append(good_right_inds)
+            # Armazenar os índices dos pixels encontrados
+            np.append(left_lane_inds, good_left_inds)
+            np.append(right_lane_inds, good_right_inds)
 
             # Recentralizar a janela se muitos pixels forem encontrados
             if len(good_left_inds) > MINPIX:
@@ -247,8 +242,8 @@ class RobotVision:
 
 if __name__ == '__main__':
     try:
-        rospy.init_node('robot_vision', anonymous=True)
-        rv = RobotVision()
+        rospy.init_node('vision', anonymous=True)
+        robot_vision = RobotVision()
         rospy.spin()
     except rospy.ROSInterruptException:
         pass

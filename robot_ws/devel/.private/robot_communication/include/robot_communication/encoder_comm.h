@@ -193,8 +193,12 @@ struct Printer< ::robot_communication::encoder_comm_<ContainerAllocator> >
 {
   template<typename Stream> static void stream(Stream& s, const std::string& indent, const ::robot_communication::encoder_comm_<ContainerAllocator>& v)
   {
+    if (false || !indent.empty())
+      s << std::endl;
     s << indent << "left_enc: ";
     Printer<float>::stream(s, indent + "  ", v.left_enc);
+    if (true || !indent.empty())
+      s << std::endl;
     s << indent << "right_enc: ";
     Printer<float>::stream(s, indent + "  ", v.right_enc);
   }

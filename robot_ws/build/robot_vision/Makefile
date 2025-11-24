@@ -48,10 +48,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/rosUsr/Shared/PB_2025_equipe1/robot_ws/src/robot_vision
+CMAKE_SOURCE_DIR = /home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/src/robot_vision
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/rosUsr/Shared/PB_2025_equipe1/robot_ws/build/robot_vision
+CMAKE_BINARY_DIR = /home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/build/robot_vision
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -137,9 +137,9 @@ list_install_components/fast: list_install_components
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/rosUsr/Shared/PB_2025_equipe1/robot_ws/build/robot_vision/CMakeFiles /home/rosUsr/Shared/PB_2025_equipe1/robot_ws/build/robot_vision/CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/build/robot_vision/CMakeFiles /home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/build/robot_vision/CMakeFiles/progress.marks
 	$(MAKE) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/rosUsr/Shared/PB_2025_equipe1/robot_ws/build/robot_vision/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/build/robot_vision/CMakeFiles 0
 .PHONY : all
 
 # The main clean target

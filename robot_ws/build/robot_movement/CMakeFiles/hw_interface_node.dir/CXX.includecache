@@ -6,7 +6,7 @@
 
 #IncludeRegexTransform: 
 
-/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/devel/.private/robot_communication/include/robot_communication/encoder_comm.h
+/home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/devel/.private/robot_communication/include/robot_communication/encoder_comm.h
 string
 -
 vector
@@ -22,7 +22,7 @@ ros/builtin_message_traits.h
 ros/message_operations.h
 -
 
-/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/devel/.private/robot_communication/include/robot_communication/velocity_comm.h
+/home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/devel/.private/robot_communication/include/robot_communication/velocity_comm.h
 string
 -
 vector
@@ -38,7 +38,7 @@ ros/builtin_message_traits.h
 ros/message_operations.h
 -
 
-/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/src/robot_movement/include/hw_interface.hpp
+/home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/src/robot_movement/include/hw_interface.hpp
 ros/ros.h
 -
 ros/console.h
@@ -72,13 +72,13 @@ geometry_msgs/TransformStamped.h
 nav_msgs/Odometry.h
 -
 robot_communication/velocity_comm.h
-/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/src/robot_movement/include/robot_communication/velocity_comm.h
+/home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/src/robot_movement/include/robot_communication/velocity_comm.h
 robot_communication/encoder_comm.h
-/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/src/robot_movement/include/robot_communication/encoder_comm.h
+/home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/src/robot_movement/include/robot_communication/encoder_comm.h
 
-/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/src/robot_movement/src/hw_interface.cpp
+/home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/src/robot_movement/src/hw_interface.cpp
 hw_interface.hpp
-/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/src/robot_movement/src/hw_interface.hpp
+/home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/src/robot_movement/src/hw_interface.hpp
 
 /opt/ros/noetic/include/geometry_msgs/Point.h
 string
@@ -697,6 +697,8 @@ ros/init.h
 /opt/ros/noetic/include/ros/ros/init.h
 common.h
 /opt/ros/noetic/include/ros/common.h
+boost/bind/bind.hpp
+-
 xmlrpcpp/XmlRpcValue.h
 -
 

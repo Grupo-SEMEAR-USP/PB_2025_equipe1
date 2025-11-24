@@ -4,5 +4,5 @@ PROJECT_PKG_CONFIG_INCLUDE_DIRS = "${prefix}/include".split(';') if "${prefix}/i
 PROJECT_CATKIN_DEPENDS = "message_runtime;std_msgs;rospy".replace(';', ' ')
 PKG_CONFIG_LIBRARIES_WITH_PREFIX = "".split(';') if "" != "" else []
 PROJECT_NAME = "robot_communication"
-PROJECT_SPACE_DIR = "/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/install"
+PROJECT_SPACE_DIR = "/home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/install"
 PROJECT_VERSION = "0.0.0"

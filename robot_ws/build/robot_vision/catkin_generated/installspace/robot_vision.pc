@@ -1,4 +1,4 @@
-prefix=/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/install
+prefix=/home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/install
 
 Name: robot_vision
 Description: Description of robot_vision

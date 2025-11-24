@@ -6,6 +6,8 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   robot_communication
+  #numpy
+  #cv2
 )
 
 ###################################
@@ -18,6 +20,8 @@ catkin_package(
     rospy 
     std_msgs 
     robot_communication
+    #numpy
+    #cv2
 )
 
 #############

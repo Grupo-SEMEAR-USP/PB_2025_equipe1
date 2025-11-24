@@ -2,7 +2,7 @@
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
-  set(CMAKE_INSTALL_PREFIX "/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/install")
+  set(CMAKE_INSTALL_PREFIX "/home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/install")
 endif()
 string(REGEX REPLACE "/$" "" CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
 
@@ -39,7 +39,7 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
-  include("/home/rosUsr/Shared/PB_2025_equipe1/robot_ws/build/robot_vision/gtest/googlemock/cmake_install.cmake")
+  include("/home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/build/robot_vision/gtest/googlemock/cmake_install.cmake")
 
 endif()
 

@@ -193,8 +193,12 @@ struct Printer< ::robot_communication::vision_pattern_<ContainerAllocator> >
 {
   template<typename Stream> static void stream(Stream& s, const std::string& indent, const ::robot_communication::vision_pattern_<ContainerAllocator>& v)
   {
+    if (false || !indent.empty())
+      s << std::endl;
     s << indent << "curvature: ";
     Printer<float>::stream(s, indent + "  ", v.curvature);
+    if (true || !indent.empty())
+      s << std::endl;
     s << indent << "offset: ";
     Printer<float>::stream(s, indent + "  ", v.offset);
   }
