@@ -22,32 +22,46 @@ class RobotVision:
     def __init__(self):
         # Inicialização dos parâmetros e subscritores/publicadores ROS
         self.vision_pub = rospy.Publisher('/vision', vision_pattern, queue_size=10)
+  
+
+  
+
+        #definindo dados de visão
+        self.vision_data = {
+            'center_distance': 0.0,
+            'curvature_radius': 0.0,
+        }
 
         self.thread = threading.Thread(target=self.camera_loop, daemon=True)
         self.thread.start()
 
     def camera_loop(self):
-        cap = cv2.VideoCapture(0) 
+        self.cam = cv2.VideoCapture(0, cv2.CAP_V4L2) # Garante backend V4L2
 
-        if not cap.isOpened():
-            print("Erro fatal: Não foi possível abrir nenhuma câmera. Verifique as conexões.")
-            return
+        # Logo após abrir a câmera e antes do loop principal do ROS:
+        for i in range(20):
+            ret, frame = self.cam.read()
+            # Apenas lendo para dar tempo ao sensor se ajustar à luz
 
-        while True:
-            ret, frame_original = cap.read()
-            
+        while not rospy.is_shutdown():
+            ret, frame = self.cam.read()
+
             if not ret:
-                print("Erro: Não foi possível ler o frame da câmera.")
+                rospy.logwarn("Erro: Não foi possível ler o frame da câmera.")
                 break
+            ## Linha Pra teste visual
+            ##cv2.imshow("Camera Frame", frame)
+            
+            self.process_frame(frame)
+            cv2.waitKey(1)
 
-            try:
+            # Publicar dados de visão
+            vision_msg = vision_pattern()
+            vision_msg.offset = self.vision_data['center_distance']
+            vision_msg.curvature = self.vision_data['curvature_radius']
+            self.vision_pub.publish(vision_msg)
 
-                cv2.imshow("Detecção de Faixa - Processado", frame_original)
-
-            except Exception as e:
-                print(f"Erro no processamento: {e}")
-                cv2.imshow("Detecção de Faixa - Erro", frame_original)
-
+        self.cam.release()
 
     def process_frame(self, frame):
         # Processamento do frame para detecção de faixas
@@ -55,7 +69,7 @@ class RobotVision:
 
         binary_warped = self.binary_threshold(img_warped)
 
-        left_fit, right_fit, left_lane_inds, right_lane_inds = self.sliding_window_search(binary_warped)
+        left_fit, right_fit = self.sliding_window_search(binary_warped)
 
         curvature_radius = self.calculate_curvature(left_fit, right_fit, binary_warped.shape[0])
         center_distance = self.calculate_center_distance(left_fit, right_fit, binary_warped.shape[1])
@@ -143,7 +157,6 @@ class RobotVision:
         leftx_current = leftx_base
         rightx_current = rightx_base
 
-
         left_lane_inds = []
         right_lane_inds = []
 
@@ -162,9 +175,8 @@ class RobotVision:
             good_right_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) &
                                (nonzerox >= win_xright_low) & (nonzerox < win_xright_high)).nonzero()[0]
 
-            # Armazenar os índices dos pixels encontrados
-            np.append(left_lane_inds, good_left_inds)
-            np.append(right_lane_inds, good_right_inds)
+            left_lane_inds.append(good_left_inds)
+            right_lane_inds.append(good_right_inds)
 
             # Recentralizar a janela se muitos pixels forem encontrados
             if len(good_left_inds) > MINPIX:
@@ -172,15 +184,15 @@ class RobotVision:
             if len(good_right_inds) > MINPIX:
                 rightx_current = np.int32(np.mean(nonzerox[good_right_inds]))
 
-            try:
-                left_lane_inds = np.concatenate(left_lane_inds)
-                right_lane_inds = np.concatenate(right_lane_inds)
-            except ValueError:
-                pass
+        try:
+            left_lane_inds = np.concatenate(left_lane_inds)
+            right_lane_inds = np.concatenate(right_lane_inds)
+        except ValueError:
+            pass
 
         left_fit, right_fit = self.average_slope_intercept(binary_warped, left_lane_inds, right_lane_inds)
 
-        return left_fit, right_fit, left_lane_inds, right_lane_inds
+        return left_fit, right_fit
     
     def average_slope_intercept(self, binary_warped, left_lane_inds, right_lane_inds):
         # Calcular a média dos coeficientes das linhas detectadas
@@ -212,6 +224,8 @@ class RobotVision:
         y_eval = img_height * YM_PER_PIX  # Ponto onde calcular a curvatura (base da imagem)
 
         # Fórmula do raio de curvatura
+        if(left_fit[0] == 0 or right_fit[0] == 0):
+            return float('inf')
         left_curverad = ((1 + (2*left_fit[0]*y_eval + left_fit[1])**2)**1.5) / np.absolute(2*left_fit[0])
         right_curverad = ((1 + (2*right_fit[0]*y_eval + right_fit[1])**2)**1.5) / np.absolute(2*right_fit[0])
 
@@ -243,7 +257,7 @@ class RobotVision:
 if __name__ == '__main__':
     try:
         rospy.init_node('vision', anonymous=True)
-        robot_vision = RobotVision()
+        rv = RobotVision()
         rospy.spin()
     except rospy.ROSInterruptException:
         pass
