@@ -1,6 +1,6 @@
 vision_params:
   camera:
-    index: 0
+    index: 2
   detection:
     margin: 100
     nwindows: 10
@@ -10,3 +10,8 @@ vision_params:
     sobel_threshold: [20, 100]
   perspective:
     src_pc: [[0.15, 0.55], [0.75, 0.55], [1, 1], [0, 1.0]]
+  normalization_parameters:
+    max_offset: 320
+    max_curvature: 0.0025
+    min_curvature: -0.0025
+    

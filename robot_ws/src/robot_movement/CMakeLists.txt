@@ -12,6 +12,7 @@ roscpp
   tf2_ros
   tf2_geometry_msgs
   robot_communication
+  rospy
 )
 
 ###################################
@@ -57,6 +58,11 @@ target_link_libraries(hw_interface_node
 
 ## Mark executables for installation
 install(TARGETS hw_interface_node
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+catkin_install_python(PROGRAMS
+  scripts/mov_controller.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
