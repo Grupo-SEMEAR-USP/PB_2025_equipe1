@@ -2,7 +2,6 @@ import rospy
 import cv2
 import numpy as np
 import threading
-import yaml
 
 from robot_communication.msg import vision_pattern
 

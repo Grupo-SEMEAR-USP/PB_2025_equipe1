@@ -17,7 +17,6 @@
   <depend>robot_communication</depend>
   <depend>numpy</depend>
   <depend>cv2</depend>
-  <depend>yaml</depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

@@ -20,7 +20,6 @@ catkin_package(
     rospy 
     std_msgs 
     robot_communication
-    yaml
     #numpy
     #cv2
 )
