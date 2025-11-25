@@ -2,20 +2,37 @@ import rospy
 import cv2
 import numpy as np
 import threading
+import yaml
 
 from robot_communication.msg import vision_pattern
 
-# --- PARÂMETROS GLOBAIS (AJUSTAR ESTES VALORES) ---
 
-# Relação pixel-para-Unidade de Distancia Real (CRÍTICO para cálculos do mundo real)
-# Ajuste medindo uma seção reta conhecida da estrada
-YM_PER_PIX = 30 / 720  # Metros por pixel na dimensão Y (altura)
-XM_PER_PIX = 3.7 / 700 # Metros por pixel na dimensão X (largura)
 
-# Parâmetros do Sliding Window(Algoritimo usado para a detecção da rua)
-NWINDOWS = 9     # Número de janelas deslizantes
-MARGIN = 100     # Largura da janela (+/- MARGIN)
-MINPIX = 50      # Número mínimo de pixels para recentralizar a janela
+# --- Carregando Parâmetros de Configuração --- #
+try:
+    NWINDOWS = rospy.get_param('vision_params/detection/nwindows')
+    MARGIN = rospy.get_param('vision_params/detection/margin')
+    MINPIX = rospy.get_param('vision_params/detection/minpix')
+    CAMERA_INDEX = rospy.get_param('vision_params/camera/index')
+    S_TRESH = tuple(rospy.get_param('vision_params/thresholds/binary_threshold'))
+    SOBEL_TRESH = tuple(rospy.get_param('vision_params/thresholds/sobel_threshold'))
+    SRC_PC= rospy.get_param('vision_params/perspective/src_pc')
+
+except Exception as e:
+    rospy.logwarn(f"Erro ao carregar parâmetros de configuração: {e}... Carregando valores padrão.")
+    NWINDOWS = 9
+    MARGIN = 100
+    MINPIX = 50
+    CAMERA_INDEX = 0
+    S_TRESH = (160, 255)
+    SOBEL_TRESH = (20, 100)
+    SRC_PC= [
+        (0.15, 0.55),
+        (0.75, 0.55),
+        (1.0, 1.0),
+        (0.0, 1.0)
+    ]
+
 
 
 class RobotVision:
@@ -76,13 +93,29 @@ class RobotVision:
         binary_warped = self.binary_threshold(img_warped)
 
 
-        left_fit, right_fit = self.sliding_window_search(binary_warped)
+        left_fit_normalized, right_fit_normalized , y_mean = self.sliding_window_search(binary_warped)
 
-        self.left_fit = left_fit
-        self.right_fit = right_fit  
+        # --- DESNORMALIZAÇÃO ---
+        A_prime_L, B_prime_L, C_prime_L = left_fit_normalized
+        A_prime_R, B_prime_R, C_prime_R = right_fit_normalized
 
-        curvature_radius = self.calculate_curvature(left_fit, right_fit, binary_warped.shape[0])
-        center_distance = self.calculate_center_distance(left_fit, right_fit, binary_warped.shape[1])
+        # Coeficientes para a faixa ESQUERDA (left_fit)
+        A_L = A_prime_L
+        B_L = B_prime_L - 2 * A_prime_L * y_mean
+        C_L = C_prime_L - B_prime_L * y_mean + A_prime_L * (y_mean**2)
+        
+        # Coeficientes para a faixa DIREITA (right_fit)
+        A_R = A_prime_R
+        B_R = B_prime_R - 2 * A_prime_R * y_mean
+        C_R = C_prime_R - B_prime_R * y_mean + A_prime_R * (y_mean**2)
+        
+        # --- ARMAZENANDO OS COEFICIENTES ORIGINAIS ---
+        self.left_fit = np.array([A_L, B_L, C_L])
+        self.right_fit = np.array([A_R, B_R, C_R]) 
+        # ----------------------------------------------
+
+        curvature_radius = self.calculate_curvature(self.left_fit, self.right_fit, binary_warped.shape[0])
+        center_distance = self.calculate_center_distance(self.left_fit, self.right_fit, binary_warped.shape[1])
 
         self.warped_img = img_warped
         self.binary_warped_img = binary_warped
@@ -99,10 +132,8 @@ class RobotVision:
         hls = cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
         s_channel = hls[:, :, 2]  # Canal de Saturação
         
-        # Binarização pelo Canal S (bom para cores)
-        # <<< ATENÇÃO: AJUSTAR ESTES VALORES >>>
-        s_thresh = (160, 255)
-        s_binary = cv2.inRange(s_channel, s_thresh[0], s_thresh[1])
+        # Binarização por Cor (bom para faixas amarelas)
+        s_binary = cv2.inRange(s_channel, S_TRESH[0], S_TRESH[1])
         
         # Binarização por Gradiente (bom para faixas brancas)
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -111,10 +142,8 @@ class RobotVision:
         sobelx = cv2.Sobel(gray, cv2.CV_64F, 1, 0) 
         abs_sobelx = np.absolute(sobelx)
         scaled_sobel = np.uint8(255 * abs_sobelx / np.max(abs_sobelx))
-        
-        # <<< ATENÇÃO: AJUSTAR ESTES VALORES >>>
-        sobel_thresh = (20, 100)
-        sobel_binary = cv2.inRange(scaled_sobel, sobel_thresh[0], sobel_thresh[1])
+
+        sobel_binary = cv2.inRange(scaled_sobel, SOBEL_TRESH[0], SOBEL_TRESH[1])
 
         # Combinar os dois métodos
         # (Ou a faixa é detectada pela cor OU pelo gradiente)
@@ -127,22 +156,23 @@ class RobotVision:
         # Aplicar transformação de perspectiva
         h, w = img.shape[:2]
 
-        # <<< ATENÇÃO: AJUSTAR ESTES VALORES >>>
-        # Pontos de origem (SRC) - O trapézio na imagem original(onde estão as faixas e nossa regiao de interesse)
-        # Estes valores dependem dos testes da camera
+        TL = SRC_PC[0]
+        TR = SRC_PC[1]
+        BR = SRC_PC[2]
+        BL = SRC_PC[3]
+
         src = np.float32([
-            (w * 0.15, h * 0.55),  # Top-left
-            (w * 0.75, h * 0.55),  # Top-right
-            (w * 1, h * 1),  # Bottom-right
-            (w * 0, h * 1)   # Bottom-left
+            (w * TL[0], h * TL[1]),  # Top-left
+            (w * TR[0], h * TR[1]),  # Top-right
+            (w * BR[0], h * BR[1]),  # Bottom-right
+            (w * BL[0], h * BL[1])   # Bottom-left
         ])
 
-        # Pontos de destino (DST) Onde esse pontos vão ficar na imagem Transformada com visão "de cima"
         dst = np.float32([
-            (w * 0.1, 0),        # Top-left
-            (w * 0.9, 0),        # Top-right
-            (w * 0.9, h),        # Bottom-right
-            (w * 0.1, h)         # Bottom-left
+            (0, 0),        # Top-left
+            (w , 0),        # Top-right
+            (w , h),        # Bottom-right
+            (0, h)         # Bottom-left
         ])
     
         # Faz as matrizes de transformação()
@@ -203,13 +233,11 @@ class RobotVision:
         except ValueError:
             pass
 
-        left_fit, right_fit = self.average_slope_intercept(binary_warped, left_lane_inds, right_lane_inds)
-
-        return left_fit, right_fit
+        return self.average_slope_intercept(binary_warped, left_lane_inds, right_lane_inds)
     
     def average_slope_intercept(self, binary_warped, left_lane_inds, right_lane_inds):
         # Calcular a média dos coeficientes das linhas detectadas
-        h,w = binary_warped.shape
+        h, w = binary_warped.shape
 
         # Encontrar os pixels que pertencem às faixas
         nonzero = binary_warped.nonzero()
@@ -221,26 +249,48 @@ class RobotVision:
         rightx = nonzerox[right_lane_inds]
         righty = nonzeroy[right_lane_inds]
 
+        # --- INÍCIO DA NORMALIZAÇÃO (CENTRALIZAÇÃO) ---
+
+        # 1. Calcular a média de Y
+        # Usamos np.mean(nonzeroy) ou h / 2, dependendo do que for mais representativo.
+        # Usar a média de todos os pontos Y é geralmente mais robusto.
+        if len(nonzeroy) > 0:
+            y_mean = np.mean(nonzeroy)
+        else:
+            y_mean = h / 2 # Valor de fallback
+
+        # 2. Subtrair a média dos dados Y (Centralização)
+        lefty_normalized = lefty - y_mean
+        righty_normalized = righty - y_mean
+
+        # --- FIM DA NORMALIZAÇÃO ---
+
         # Ajustar uma linha polinomial de 2º grau (quadrática) aos pixels das faixas
-
         try:
-            left_fit = np.polyfit(lefty*YM_PER_PIX, leftx*XM_PER_PIX, 2)
-            right_fit = np.polyfit(righty*YM_PER_PIX, rightx*XM_PER_PIX, 2)
-        except (np.linalg.LinAlgError,ValueError, TypeError):
-            left_fit = np.array([0,0,0])
-            right_fit = np.array([0,0,0])
+            # Usamos os dados Y normalizados para o ajuste, mas os dados X originais
+            left_fit_normalized = np.polyfit(lefty_normalized, leftx, 2)
+            right_fit_normalized = np.polyfit(righty_normalized, rightx, 2)
 
-        return left_fit, right_fit
+        except (np.linalg.LinAlgError, ValueError, TypeError):
+            # Em caso de erro, retornar coeficientes que definem uma linha horizontal nula
+            left_fit_normalized = np.array([0, 0, 0])
+            right_fit_normalized = np.array([0, 0, 0])
+
+        # O resultado retornado (left_fit_normalized, right_fit_normalized)
+        # são os coeficientes ajustados para os dados centralizados.
+        # Você deve usá-los no resto do seu pipeline, e **lembrar-se** de que
+        # eles são válidos APENAS para coordenadas Y que foram subtraídas por `y_mean`.
+        
+        return left_fit_normalized, right_fit_normalized , y_mean
     
     def calculate_curvature(self, left_fit, right_fit, img_height):
         # Calcular o raio de curvatura das faixas
-        y_eval = img_height * YM_PER_PIX  # Ponto onde calcular a curvatura (base da imagem)
 
         # Fórmula do raio de curvatura
         if(left_fit[0] == 0 or right_fit[0] == 0):
             return float('inf')
-        left_curverad = ((1 + (2*left_fit[0]*y_eval + left_fit[1])**2)**1.5) / np.absolute(2*left_fit[0])
-        right_curverad = ((1 + (2*right_fit[0]*y_eval + right_fit[1])**2)**1.5) / np.absolute(2*right_fit[0])
+        left_curverad = ((1 + (2*left_fit[0]*img_height + left_fit[1])**2)**1.5) / np.absolute(2*left_fit[0])
+        right_curverad = ((1 + (2*right_fit[0]*img_height + right_fit[1])**2)**1.5) / np.absolute(2*right_fit[0])
 
         # Retorna a média dos dois raios
         return (left_curverad + right_curverad) / 2
@@ -250,14 +300,14 @@ class RobotVision:
 
         try:
             # Posição da faixa esquerda e direita na base da imagem
-            left_lane_base = left_fit[0]*(img_width*YM_PER_PIX)**2 + left_fit[1]*(img_width*YM_PER_PIX) + left_fit[2]
-            right_lane_base = right_fit[0]*(img_width*YM_PER_PIX)**2 + right_fit[1]*(img_width*YM_PER_PIX) + right_fit[2]
+            left_lane_base = left_fit[0]*(img_width)**2 + left_fit[1]*(img_width) + left_fit[2]
+            right_lane_base = right_fit[0]*(img_width)**2 + right_fit[1]*(img_width) + right_fit[2]
 
             # Centro da faixa
             lane_center = (left_lane_base + right_lane_base) / 2.0
 
             # Centro da imagem (posição do robô)
-            image_center = (img_width * XM_PER_PIX) / 2.0
+            image_center = (img_width) / 2.0
 
             # Distância do centro do robô ao centro da faixa
             center_distance = image_center - lane_center

@@ -20,6 +20,7 @@ catkin_package(
     rospy 
     std_msgs 
     robot_communication
+    yaml
     #numpy
     #cv2
 )
@@ -37,4 +38,9 @@ catkin_install_python(PROGRAMS
 ## Mark other files for installation (e.g. launch and bag files, etc.)
 install(DIRECTORY launch/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
+)
+
+## Adding Config Files
+install(DIRECTORY config/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/config
 )
