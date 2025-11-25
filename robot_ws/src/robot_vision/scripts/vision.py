@@ -2,6 +2,7 @@ import rospy
 import cv2
 import numpy as np
 import threading
+from collections import deque
 
 from robot_communication.msg import vision_pattern
 
@@ -16,6 +17,10 @@ try:
     S_TRESH = tuple(rospy.get_param('vision_params/thresholds/binary_threshold'))
     SOBEL_TRESH = tuple(rospy.get_param('vision_params/thresholds/sobel_threshold'))
     SRC_PC= rospy.get_param('vision_params/perspective/src_pc')
+    MAX_CENTER_OFFSET_PIXELS = rospy.get_param('vision_params/normalization_parameters/max_offset')
+    MIN_CURVATURE_RADIUS = rospy.get_param('vision_params/normalization_parameters/min_curvature')
+    MAX_CURVATURE_RADIUS = rospy.get_param('vision_params/normalization_parameters/max_curvature')
+    NODE_RATE_HZ = rospy.get_param('vision_params/node_config/rate')
 
 except Exception as e:
     rospy.logwarn(f"Erro ao carregar parâmetros de configuração: {e}... Carregando valores padrão.")
@@ -31,21 +36,28 @@ except Exception as e:
         (1.0, 1.0),
         (0.0, 1.0)
     ]
-
+    MAX_CENTER_OFFSET_PIXELS = 300 
+    MIN_CURVATURE_RADIUS = 300 
+    MAX_CURVATURE_RADIUS = 5000
+    NODE_RATE_HZ = 20
 
 
 class RobotVision:
     def __init__(self):
         # Inicialização dos parâmetros e subscritores/publicadores ROS
         self.vision_pub = rospy.Publisher('/vision', vision_pattern, queue_size=10)
-  
+
+        self.queue_size = int(0.5 * NODE_RATE_HZ) # 5 amostras
+        self.vision_queue = deque(maxlen=self.queue_size)
+
+        # Variáveis internas
+        self.cam = None
         self.Minv = None
         self.binary_warped_img = None
         self.warped_img = None
         self.cam_img = None
-        self.left_fit_pixel = None  # Ajuste em Pixels (para desenho)
-        self.right_fit_pixel = None # Ajuste em Pixels (para desenho)
-  
+        self.left_fit = None 
+        self.right_fit = None 
 
         #definindo dados de visão
         self.vision_data = {
@@ -53,8 +65,35 @@ class RobotVision:
             'curvature_radius': 0.0,
         }
 
-        self.thread = threading.Thread(target=self.camera_loop, daemon=True)
-        self.thread.start()
+        self.cam_thread = threading.Thread(target=self.camera_loop, daemon=True)
+        self.cam_thread.start()
+        self.pub_thread = threading.Thread(target=self.publishing_loop, daemon=True)
+        self.pub_thread.start()
+
+    def publishing_loop(self):
+        # Define a taxa de publicação
+        rate = rospy.Rate(NODE_RATE_HZ) 
+
+        while not rospy.is_shutdown():
+            if len(self.vision_queue) > 0:
+                
+                # 1. Calcular a Média
+                # Pega a média de todos os 'center_distance' na fila
+                avg_offset = np.mean([d['center_distance'] for d in self.vision_queue])
+                # Pega a média de todos os 'curvature_radius' na fila
+                avg_curvature = np.mean([d['curvature_radius'] for d in self.vision_queue])
+                
+                # 2. Normalizar os Valores
+                norm_offset = self.normalize_offset(avg_offset)
+                norm_curvature = self.normalize_curvature(avg_curvature)
+
+                # 3. Publicar
+                vision_msg = vision_pattern()
+                vision_msg.offset = norm_offset
+                vision_msg.curvature = norm_curvature
+                self.vision_pub.publish(vision_msg)
+            
+            rate.sleep()
 
     def camera_loop(self):
         self.cam = cv2.VideoCapture(CAMERA_INDEX, cv2.CAP_V4L2) # Garante backend V4L2
@@ -78,14 +117,12 @@ class RobotVision:
                 break
             ## Linha Pra teste visual
             #self.debug_camera()
-            
+            self.vision_queue.append({
+            'center_distance': self.vision_data['center_distance'],
+            'curvature_radius': self.vision_data['curvature_radius']
+            })
             cv2.waitKey(1)
 
-            # Publicar dados de visão
-            vision_msg = vision_pattern()
-            vision_msg.offset = self.vision_data['center_distance']
-            vision_msg.curvature = self.vision_data['curvature_radius']
-            self.vision_pub.publish(vision_msg)
 
         self.cam.release()
 
@@ -383,6 +420,35 @@ class RobotVision:
         cv2.imshow("Imagem Warpada", self.warped_img)
         cv2.imshow("Imagem Original", frame)
 
+    def normalize_offset(self, offset_pixels):
+        clamped_offset = np.clip(offset_pixels, -MAX_CENTER_OFFSET_PIXELS, MAX_CENTER_OFFSET_PIXELS)
+        return clamped_offset / MAX_CENTER_OFFSET_PIXELS
+
+    def normalize_curvature(self, curverad):
+        # Normaliza o raio de curvatura para o intervalo [-1.0, 1.0].
+        #     -1.0: Curvatura máxima para a esquerda.
+        #      0.0: Linha reta (infinito).
+        #     +1.0: Curvatura máxima para a direita.
+        
+        # 1. Calcula a curvatura inversa (1/radio)
+        if curverad > MAX_CURVATURE_RADIUS: 
+            inverse_curv = 0.0
+        else:
+            inverse_curv = 1.0 / curverad
+
+        # 2. Assume que a curvatura é simétrica (por enquanto) e clampa a curvatura inversa.
+        # Definir a curvatura máxima esperada. 1/MIN_CURVATURE_RADIUS
+        MAX_INVERSE_CURVATURE = 1.0 / MIN_CURVATURE_RADIUS 
+
+        clamped_inv_curv = np.clip(inverse_curv, -MAX_INVERSE_CURVATURE, MAX_INVERSE_CURVATURE)
+        
+        # Normaliza o valor inverso para -1.0 a 1.0
+        if MAX_INVERSE_CURVATURE == 0.0:
+            return 0.0
+        norm_abs_curvature = clamped_inv_curv / MAX_INVERSE_CURVATURE
+        
+        # RETORNO TEMPORÁRIO (APENAS MAGNITUDE)
+        return norm_abs_curvature
 
 if __name__ == '__main__':
     try:
