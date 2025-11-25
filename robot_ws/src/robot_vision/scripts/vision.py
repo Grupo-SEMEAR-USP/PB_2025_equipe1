@@ -23,7 +23,12 @@ class RobotVision:
         # Inicialização dos parâmetros e subscritores/publicadores ROS
         self.vision_pub = rospy.Publisher('/vision', vision_pattern, queue_size=10)
   
-
+        self.Minv = None
+        self.binary_warped_img = None
+        self.warped_img = None
+        self.cam_img = None
+        self.left_fit_pixel = None  # Ajuste em Pixels (para desenho)
+        self.right_fit_pixel = None # Ajuste em Pixels (para desenho)
   
 
         #definindo dados de visão
@@ -45,14 +50,15 @@ class RobotVision:
 
         while not rospy.is_shutdown():
             ret, frame = self.cam.read()
-
+            self.process_frame(frame)
+            
+            self.cam_img = frame
             if not ret:
                 rospy.logwarn("Erro: Não foi possível ler o frame da câmera.")
                 break
             ## Linha Pra teste visual
-            ##cv2.imshow("Camera Frame", frame)
+            #self.debug_camera()
             
-            self.process_frame(frame)
             cv2.waitKey(1)
 
             # Publicar dados de visão
@@ -69,11 +75,18 @@ class RobotVision:
 
         binary_warped = self.binary_threshold(img_warped)
 
+
         left_fit, right_fit = self.sliding_window_search(binary_warped)
+
+        self.left_fit = left_fit
+        self.right_fit = right_fit  
 
         curvature_radius = self.calculate_curvature(left_fit, right_fit, binary_warped.shape[0])
         center_distance = self.calculate_center_distance(left_fit, right_fit, binary_warped.shape[1])
 
+        self.warped_img = img_warped
+        self.binary_warped_img = binary_warped
+        
         self.vision_data['center_distance'] = center_distance
         self.vision_data['curvature_radius'] = curvature_radius
 
@@ -134,7 +147,7 @@ class RobotVision:
     
         # Faz as matrizes de transformação()
         M = cv2.getPerspectiveTransform(src, dst)
-
+        self.Minv = cv2.getPerspectiveTransform(dst, src)  # Matriz inversa para "desfazer" o warp depois
         warped = cv2.warpPerspective(img, M, (w, h), flags=cv2.INTER_LINEAR)
 
         return warped
@@ -252,6 +265,70 @@ class RobotVision:
             center_distance = 0.0
         
         return center_distance
+
+    def debug_camera(self):
+        
+        frame = self.cam_img
+        binary_warped = self.binary_warped_img
+        left_fit = self.left_fit
+        right_fit = self.right_fit 
+        dados = {
+            'curvatura_raio': self.vision_data['curvature_radius'],
+            'distancia_centro': self.vision_data['center_distance']
+        }
+        Minv = self.Minv
+
+
+        #Desenha a área da faixa detectada e os dados na imagem original.
+
+        h, w = frame.shape[:2]
+        
+    
+        ploty = np.linspace(0, h - 1, h)
+        
+        try:
+            left_fitx = left_fit[0] * ploty**2 + left_fit[1] * ploty + left_fit[2]
+            right_fitx = right_fit[0] * ploty**2 + right_fit[1] * ploty + right_fit[2]
+        except TypeError:
+            #Se os 'fit' falharem (forem [0,0,0])
+            left_fitx = ploty * 0
+            right_fitx = ploty * 0
+            
+        # Criar uma imagem para desenhar o polígono da faixa
+        warp_zero = np.zeros_like(binary_warped).astype(np.uint8)
+        color_warp = np.dstack((warp_zero, warp_zero, warp_zero))
+
+        # Formatar os pontos para cv2.fillPoly()
+        pts_left = np.array([np.transpose(np.vstack([left_fitx, ploty]))])
+        pts_right = np.array([np.flipud(np.transpose(np.vstack([right_fitx, ploty])))])
+        pts = np.hstack((pts_left, pts_right))
+
+        # Desenhar o polígono da faixa (em verde) na imagem "warpada"
+        cv2.fillPoly(color_warp, np.int_([pts]), (0, 255, 0))
+
+        # "Desfazer" o warp da perspectiva
+        new_warp = cv2.warpPerspective(color_warp, Minv, (w, h))
+        
+        # Combinar a imagem original com o polígono da faixa
+        img_marcada = cv2.addWeighted(frame, 1, new_warp, 0.3, 0)
+
+        # Adicionar o texto (dados) na imagem
+        curvatura = dados.get('curvatura_raio', 0.0)
+        offset = dados.get('distancia_centro', 0.0)
+        
+        cv2.putText(img_marcada, f'Raio de Curvatura: {curvatura:8.0f}', 
+                    (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+        
+        offset_dir = "Esquerda" if offset > 0 else "Direita"
+        if offset == 0: offset_dir = "Centro"
+            
+        cv2.putText(img_marcada, f'Offset do Centro: {abs(offset):.2f} ({offset_dir})', 
+                    (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+
+        cv2.imshow("Detecção de Faixa - Debug", img_marcada)
+        cv2.imshow("Imagem Warpada Binária", binary_warped)
+        cv2.imshow("Imagem Warpada", self.warped_img)
+        cv2.imshow("Imagem Original", frame)
 
 
 if __name__ == '__main__':
