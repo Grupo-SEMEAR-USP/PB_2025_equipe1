@@ -59,12 +59,16 @@ class RobotVision:
 
     def camera_loop(self):
         self.cam = cv2.VideoCapture(0, cv2.CAP_V4L2) # Garante backend V4L2
+         
+        if not cap.isOpened():
+          rospy.logwarn("Erro fatal: Não foi possível abrir nenhuma câmera. Verifique as conexões.")
+          return
 
         # Logo após abrir a câmera e antes do loop principal do ROS:
         for i in range(20):
             ret, frame = self.cam.read()
             # Apenas lendo para dar tempo ao sensor se ajustar à luz
-
+ 
         while not rospy.is_shutdown():
             ret, frame = self.cam.read()
             self.process_frame(frame)
