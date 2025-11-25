@@ -2,7 +2,6 @@ import rospy
 import cv2
 import numpy as np
 import threading
-import yaml
 
 from robot_communication.msg import vision_pattern
 
@@ -60,7 +59,7 @@ class RobotVision:
     def camera_loop(self):
         self.cam = cv2.VideoCapture(0, cv2.CAP_V4L2) # Garante backend V4L2
          
-        if not cap.isOpened():
+        if not self.cam.isOpened():
           rospy.logwarn("Erro fatal: Não foi possível abrir nenhuma câmera. Verifique as conexões.")
           return
 
