@@ -1,18 +1,20 @@
 vision_params:
   camera:
-    index: 2
+    index: 0
+    flip: false
   detection:
     margin: 100
-    nwindows: 10
-    minpix: 150
+    nwindows: 100
+    minpix: 20
   thresholds: 
-    binary_threshold: [160, 255]
-    sobel_threshold: [20, 100]
+    binary_threshold: [220, 255]
+    sobel_threshold: [50, 100]
   perspective:
-    src_pc: [[0.15, 0.55], [0.75, 0.55], [1, 1], [0, 1.0]]
+    src_pc: [[0.14, 0.16], [0.86, 0.16], [1, 1], [0, 1.0]]
   normalization_parameters:
-    max_offset: 320
+    max_offset: 800
     max_curvature: 5000
     min_curvature: 100
   node_config:
     rate: 20 #Frequency in Hz
+    debug_mode: true

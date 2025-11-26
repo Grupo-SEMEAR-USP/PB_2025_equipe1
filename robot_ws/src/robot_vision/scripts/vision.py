@@ -51,19 +51,22 @@ class RobotVision:
         self.vision_queue = deque(maxlen=self.queue_size)
 
         # Variáveis internas
-        self.cam = None
+        self.cam = cv2.VideoCapture(CAMERA_INDEX, cv2.CAP_V4L2) # Garante backend V4L2
         self.Minv = None
         self.binary_warped_img = None
         self.warped_img = None
         self.cam_img = None
         self.left_fit = None 
         self.right_fit = None 
-
+        self.avg_offset = 0.0
+        self.avg_curvature = 0.0
         #definindo dados de visão
         self.vision_data = {
             'center_distance': 0.0,
             'curvature_radius': 0.0,
         }
+
+        self.height, self.width = self.cam.read()[1].shape[:2]
 
         self.cam_thread = threading.Thread(target=self.camera_loop, daemon=True)
         self.cam_thread.start()
@@ -86,7 +89,8 @@ class RobotVision:
                 # 2. Normalizar os Valores
                 norm_offset = self.normalize_offset(avg_offset)
                 norm_curvature = self.normalize_curvature(avg_curvature)
-
+                self.avg_offset = norm_offset
+                self.avg_curvature = norm_curvature
                 # 3. Publicar
                 vision_msg = vision_pattern()
                 vision_msg.offset = norm_offset
@@ -96,8 +100,6 @@ class RobotVision:
             rate.sleep()
 
     def camera_loop(self):
-        self.cam = cv2.VideoCapture(CAMERA_INDEX, cv2.CAP_V4L2) # Garante backend V4L2
-         
         if not self.cam.isOpened():
           rospy.logwarn("Erro fatal: Não foi possível abrir nenhuma câmera. Verifique as conexões.")
           return
@@ -106,21 +108,24 @@ class RobotVision:
         for i in range(20):
             ret, frame = self.cam.read()
             # Apenas lendo para dar tempo ao sensor se ajustar à luz
- 
+    
         while not rospy.is_shutdown():
             ret, frame = self.cam.read()
+            if rospy.get_param('vision_params/camera/flip'):  frame = cv2.flip(frame, -1)  # Gira a imagem 180 graus se necessário
             self.process_frame(frame)
             
             self.cam_img = frame
             if not ret:
                 rospy.logwarn("Erro: Não foi possível ler o frame da câmera.")
                 break
-            ## Linha Pra teste visual
-            #self.debug_camera()
+
             self.vision_queue.append({
             'center_distance': self.vision_data['center_distance'],
             'curvature_radius': self.vision_data['curvature_radius']
             })
+            img = self.debug_camera(frame)
+            if rospy.get_param('vision_params/node_config/debug_mode'):
+                cv2.imshow("a", img)
             cv2.waitKey(1)
 
 
@@ -356,73 +361,77 @@ class RobotVision:
         
         return center_distance
 
-    def debug_camera(self):
+    def debug_camera(self,frame):
+        # Esta função visa apenas processar e retornar a imagem marcada.
+        # A visualização (cv2.imshow e cv2.waitKey) será tratada no camera_loop.
         
-        frame = self.cam_img
-        binary_warped = self.binary_warped_img
+        # 1. Obter dados
         left_fit = self.left_fit
         right_fit = self.right_fit 
-        dados = {
-            'curvatura_raio': self.vision_data['curvature_radius'],
-            'distancia_centro': self.vision_data['center_distance']
-        }
+        cam_img = frame
+        binary_warped_img = self.binary_warped_img
         Minv = self.Minv
+        avg_curvature = self.avg_curvature
+        avg_offset = self.avg_offset
 
+        # Verifica se as imagens essenciais foram inicializadas
+        if cam_img is None or binary_warped_img is None or Minv is None:
+            # Retorna a imagem original se os dados não estiverem prontos
+            return np.zeros((self.height, self.width, 3), dtype=np.uint8) if cam_img is None else cam_img
 
-        #Desenha a área da faixa detectada e os dados na imagem original.
-
-        h, w = frame.shape[:2]
-        
-    
+        h, w = cam_img.shape[:2]
         ploty = np.linspace(0, h - 1, h)
         
+        # 2. Calcular as posições X das faixas
         try:
+            # Calcula os pixels X para cada Y baseado nos coeficientes polinomiais
             left_fitx = left_fit[0] * ploty**2 + left_fit[1] * ploty + left_fit[2]
             right_fitx = right_fit[0] * ploty**2 + right_fit[1] * ploty + right_fit[2]
-        except TypeError:
-            #Se os 'fit' falharem (forem [0,0,0])
+        except (TypeError, IndexError, ValueError):
+            # Se 'fit' falhar (for None, tamanho incorreto, ou erro de cálculo)
             left_fitx = ploty * 0
             right_fitx = ploty * 0
             
-        # Criar uma imagem para desenhar o polígono da faixa
-        warp_zero = np.zeros_like(binary_warped).astype(np.uint8)
+        # 3. Criar a sobreposição do polígono da faixa
+        # Usa a imagem warped binária como base de tamanho (mesmo que não seja usada diretamente)
+        warp_zero = np.zeros_like(binary_warped_img).astype(np.uint8)
         color_warp = np.dstack((warp_zero, warp_zero, warp_zero))
 
         # Formatar os pontos para cv2.fillPoly()
+        # Transpõe (x, y) e inverte o lado direito para criar um polígono fechado
         pts_left = np.array([np.transpose(np.vstack([left_fitx, ploty]))])
         pts_right = np.array([np.flipud(np.transpose(np.vstack([right_fitx, ploty])))])
         pts = np.hstack((pts_left, pts_right))
 
-        # Desenhar o polígono da faixa (em verde) na imagem "warpada"
-        cv2.fillPoly(color_warp, np.int_([pts]), (0, 255, 0))
+        # Desenhar o polígono da faixa (em verde)
+        cv2.fillPoly(color_warp, np.int32([pts]), (0, 255, 0))
 
-        # "Desfazer" o warp da perspectiva
+        # 4. "Desfazer" o warp da perspectiva e sobrepor
         new_warp = cv2.warpPerspective(color_warp, Minv, (w, h))
         
         # Combinar a imagem original com o polígono da faixa
-        img_marcada = cv2.addWeighted(frame, 1, new_warp, 0.3, 0)
+        img_marcada = cv2.addWeighted(cam_img, 1, new_warp, 0.3, 0)
 
-        # Adicionar o texto (dados) na imagem
-        curvatura = dados.get('curvatura_raio', 0.0)
-        offset = dados.get('distancia_centro', 0.0)
+        # 5. Adicionar o texto (dados) na imagem
+        curvatura = avg_curvature
+        offset = avg_offset
         
         cv2.putText(img_marcada, f'Raio de Curvatura: {curvatura:8.0f}', 
-                    (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+                    (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
         
-        offset_dir = "Esquerda" if offset > 0 else "Direita"
-        if offset == 0: offset_dir = "Centro"
+        offset_dir = "Esquerda" if offset < 0 else "Direita"
+        if abs(offset) < 1.0: offset_dir = "Centro"
+        if offset == 0.0: offset_dir = "N/D"
             
         cv2.putText(img_marcada, f'Offset do Centro: {abs(offset):.2f} ({offset_dir})', 
-                    (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+                    (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
 
-        cv2.imshow("Detecção de Faixa - Debug", img_marcada)
-        cv2.imshow("Imagem Warpada Binária", binary_warped)
-        cv2.imshow("Imagem Warpada", self.warped_img)
-        cv2.imshow("Imagem Original", frame)
-
+        # 6. Retorna a imagem marcada para ser exibida externamente
+        return img_marcada
+    
     def normalize_offset(self, offset_pixels):
         clamped_offset = np.clip(offset_pixels, -MAX_CENTER_OFFSET_PIXELS, MAX_CENTER_OFFSET_PIXELS)
-        return clamped_offset / MAX_CENTER_OFFSET_PIXELS
+        return clamped_offset / (MAX_CENTER_OFFSET_PIXELS*0.1)
 
     def normalize_curvature(self, curverad):
         # Normaliza o raio de curvatura para o intervalo [-1.0, 1.0].
@@ -445,7 +454,7 @@ class RobotVision:
         # Normaliza o valor inverso para -1.0 a 1.0
         if MAX_INVERSE_CURVATURE == 0.0:
             return 0.0
-        norm_abs_curvature = clamped_inv_curv / MAX_INVERSE_CURVATURE
+        norm_abs_curvature = clamped_inv_curv / (MAX_INVERSE_CURVATURE*0.1)
         
         # RETORNO TEMPORÁRIO (APENAS MAGNITUDE)
         return norm_abs_curvature
