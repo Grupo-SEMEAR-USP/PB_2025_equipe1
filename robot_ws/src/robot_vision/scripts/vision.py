@@ -110,6 +110,8 @@ class RobotVision:
         # Logo após abrir a câmera e antes do loop principal do ROS:
         for i in range(20):
             ret, frame = self.cam.read()
+            self.process_frame(frame)
+            
             # Apenas lendo para dar tempo ao sensor se ajustar à luz
     
         while not rospy.is_shutdown():
@@ -117,7 +119,6 @@ class RobotVision:
             if rospy.get_param('vision_params/camera/flip'):  frame = cv2.flip(frame, -1)  # Gira a imagem 180 graus se necessário
             self.process_frame(frame)
             
-            self.cam_img = frame
             if not ret:
                 rospy.logwarn("Erro: Não foi possível ler o frame da câmera.")
                 break
@@ -126,7 +127,8 @@ class RobotVision:
             'center_distance': self.vision_data['center_distance'],
             'curvature_radius': self.vision_data['curvature_radius']
             })
-            sw_img,hg_img,bin_img = self.debug_camera(frame)
+            
+            sw_img , hg_img,bin_img = self.debug_camera(frame)
             if rospy.get_param('vision_params/node_config/debug_mode'):
                 cv2.imshow("Sliding Windowns Detect", sw_img)
                 cv2.imshow("Hough Detect", hg_img)
@@ -139,25 +141,41 @@ class RobotVision:
     def process_frame(self, frame):
         # Processamento do frame para detecção de faixas
         img_warped = self.perspective_transform(frame)
-        hg_img = self.binary_threshold(frame.copy())
+
         binary_warped = self.binary_threshold(img_warped)
-
-        # Hough Detection
-        cinter_dist ,lines, min_angle_line, closest_inter, min_angle, area_left, area_right, norm_angle, norm_offset_hough = self.hough_line_detection(hg_img)
-
-        # Sliding Window Search (Agora retorna os valores já tratados)
-        # Retorna coeficientes reais (pixels) e métricas limitadas
-        self.left_fit, self.right_fit, offset_clamped, curvature_clamped = self.sliding_window_search(binary_warped)
-
-        self.warped_img = img_warped
         self.binary_warped_img = binary_warped
+
+        left_fit_normalized, right_fit_normalized , y_mean = self.sliding_window_search(binary_warped)
+
+        # --- DESNORMALIZAÇÃO ---
+        A_prime_L, B_prime_L, C_prime_L = left_fit_normalized
+        A_prime_R, B_prime_R, C_prime_R = right_fit_normalized
+
+        # Coeficientes para a faixa ESQUERDA (left_fit)
+        A_L = A_prime_L
+        B_L = B_prime_L - 2 * A_prime_L * y_mean
+        C_L = C_prime_L - B_prime_L * y_mean + A_prime_L * (y_mean**2)
         
+        # Coeficientes para a faixa DIREITA (right_fit)
+        A_R = A_prime_R
+        B_R = B_prime_R - 2 * A_prime_R * y_mean
+        C_R = C_prime_R - B_prime_R * y_mean + A_prime_R * (y_mean**2)
+        
+        # --- ARMAZENANDO OS COEFICIENTES ORIGINAIS ---
+        self.left_fit = np.array([A_L, B_L, C_L])
+        self.right_fit = np.array([A_R, B_R, C_R]) 
+        # ----------------------------------------------
+
+        hg_img = self.binary_threshold(frame.copy())
+        cinter_dist ,lines, min_angle_line, closest_inter, min_angle, area_left, area_right, norm_angle, norm_offset_hough = self.hough_line_detection(hg_img)
         # --- ATUALIZAÇÃO DO DICIONÁRIO vision_data ---
         # Valores diretos retornados pela função atualizada
-        offset_robust = self.calculate_robust_offset(self.left_fit, self.right_fit, self.height, self.width)
-        self.vision_data['center_distance'] = offset_robust
-        self.vision_data['curvature_radius'] = curvature_clamped 
         
+        curvature_radius = self.calculate_curvature(self.left_fit, self.right_fit, binary_warped.shape[0])
+        center_distance = self.calculate_center_distance(self.left_fit, self.right_fit, binary_warped.shape[1])
+        self.vision_data['center_distance'] = center_distance
+        self.vision_data['curvature_radius'] = curvature_radius
+
         # Dados do Hough
         self.vision_data['area_left'] = area_left
         self.vision_data['area_right'] = area_right
@@ -171,7 +189,7 @@ class RobotVision:
         # Novos campos para controle Hough
         self.vision_data['norm_angle_hough'] = norm_angle
         self.vision_data['norm_offset_hough'] = norm_offset_hough
-    
+
     def binary_threshold(self, img):
         # Aplicar limiarização binária na imagem
         #Isola os pixels das faixas usando limiares de cor e gradiente.
@@ -210,20 +228,12 @@ class RobotVision:
         BR = SRC_PC[2]
         BL = SRC_PC[3]
 
-
         src = np.float32([
             (w * TL[0], h * TL[1]),  # Top-left
             (w * TR[0], h * TR[1]),  # Top-right
             (w * BR[0], h * BR[1]),  # Bottom-right
             (w * BL[0], h * BL[1])   # Bottom-left
         ])
-
-
-        if self.vision_data['closest_intersection']!= None:
-            if self.vision_data['closest_intersection'][1]!=0:
-                src[0][1] = self.vision_data['closest_intersection'][1]-10
-                src[1][1] = self.vision_data['closest_intersection'][1]-10
-
 
         dst = np.float32([
             (0, 0),        # Top-left
@@ -240,19 +250,16 @@ class RobotVision:
         return warped
 
     def sliding_window_search(self, binary_warped):
+        # Implementar o algoritmo de janelas deslizantes
         h, w = binary_warped.shape
 
-        # Histograma na metade inferior
         histogram = np.sum(binary_warped[h//2:, :], axis=0)
         midpoint = np.int32(histogram.shape[0] // 2)
-        
-        # Encontrar pontos de partida
         leftx_base = np.argmax(histogram[:midpoint])
         rightx_base = np.argmax(histogram[midpoint:]) + midpoint
-        
         window_height = np.int32(h // NWINDOWS)
 
-        # Identificar pixels não-zero
+        # Identificar os pixels não zero na imagem binária
         nonzero = binary_warped.nonzero()
         nonzeroy = np.array(nonzero[0])
         nonzerox = np.array(nonzero[1])
@@ -263,7 +270,7 @@ class RobotVision:
         left_lane_inds = []
         right_lane_inds = []
 
-        # Loop das Janelas
+        # Percorrer as janelas
         for window in range(NWINDOWS):
             win_y_low = h - (window + 1) * window_height
             win_y_high = h - window * window_height
@@ -272,7 +279,7 @@ class RobotVision:
             win_xright_low = rightx_current - MARGIN
             win_xright_high = rightx_current + MARGIN
 
-            # Identificar pixels na janela
+            # Identificar os pixels dentro da janela
             good_left_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) &
                               (nonzerox >= win_xleft_low) & (nonzerox < win_xleft_high)).nonzero()[0]
             good_right_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) &
@@ -281,7 +288,7 @@ class RobotVision:
             left_lane_inds.append(good_left_inds)
             right_lane_inds.append(good_right_inds)
 
-            # Recentralizar
+            # Recentralizar a janela se muitos pixels forem encontrados
             if len(good_left_inds) > MINPIX:
                 leftx_current = np.int32(np.mean(nonzerox[good_left_inds]))
             if len(good_right_inds) > MINPIX:
@@ -293,95 +300,7 @@ class RobotVision:
         except ValueError:
             pass
 
-        # Chama a nova função robusta de cálculo
-        return self.fit_and_calculate_metrics(binary_warped, left_lane_inds, right_lane_inds)
-
-    def fit_and_calculate_metrics(self, binary_warped, left_lane_inds, right_lane_inds):
-
-        h, w = binary_warped.shape
-        
-        # Pixels detectados
-        nonzero = binary_warped.nonzero()
-        nonzeroy = np.array(nonzero[0])
-        nonzerox = np.array(nonzero[1])
-
-        # Se não detectou pixels suficientes, retorna valores seguros (fallback)
-        if len(left_lane_inds) < MINPIX or len(right_lane_inds) < MINPIX:
-            # Retorna coeficientes zerados, offset 0 e curvatura máxima (reta)
-            return np.array([0,0,0]), np.array([0,0,0]), 0.0, 1000.0
-
-        # Extrair coordenadas
-        leftx = nonzerox[left_lane_inds]
-        lefty = nonzeroy[left_lane_inds]
-        rightx = nonzerox[right_lane_inds]
-        righty = nonzeroy[right_lane_inds]
-
-        # --- 1. SCALING DO EIXO Y (Solução do RankWarning) ---
-        # Transformamos Y de [0, 720] para [0, 1] para o ajuste matemático
-        y_scale = float(h)
-        lefty_scaled = lefty / y_scale
-        righty_scaled = righty / y_scale
-
-        # --- 2. FIT POLINOMIAL ---
-        # Ajustamos x = A(y_scaled)^2 + B(y_scaled) + C
-        try:
-            left_fit_scaled = np.polyfit(lefty_scaled, leftx, 2)
-            right_fit_scaled = np.polyfit(righty_scaled, rightx, 2)
-        except Exception:
-             return np.array([0,0,0]), np.array([0,0,0]), 0.0, 1000.0
-
-        # --- 3. DESNORMALIZAÇÃO DOS COEFICIENTES (Voltar para Pixels) ---
-        # Se x = A'(y/S)^2 + B'(y/S) + C'
-        # Então x = (A'/S^2)y^2 + (B'/S)y + C'
-        
-        # Coeficientes reais (Pixel Space)
-        left_fit = np.array([
-            left_fit_scaled[0] / (y_scale**2),
-            left_fit_scaled[1] / y_scale,
-            left_fit_scaled[2]
-        ])
-        
-        right_fit = np.array([
-            right_fit_scaled[0] / (y_scale**2),
-            right_fit_scaled[1] / y_scale,
-            right_fit_scaled[2]
-        ])
-
-        # --- 4. CÁLCULO DE CURVATURA ---
-        # Raio de curvatura na base da imagem (y = h)
-        y_eval = h
-        
-        # Fórmula: R = ((1 + (2Ay + B)^2)^1.5) / |2A|
-        # Calculamos para esquerda e direita e tiramos a média
-        try:
-            left_curverad = ((1 + (2*left_fit[0]*y_eval + left_fit[1])**2)**1.5) / np.absolute(2*left_fit[0] + 1e-6) # +1e-6 evita div por zero
-            right_curverad = ((1 + (2*right_fit[0]*y_eval + right_fit[1])**2)**1.5) / np.absolute(2*right_fit[0] + 1e-6)
-            avg_curv_rad = (left_curverad + right_curverad) / 2
-        except Exception:
-            avg_curv_rad = 1000.0
-
-        # CLAMP CURVATURA [0, 1000]
-        # Nota: Normalmente Raio infinito = reta. Se você quer limitar em 1000, 
-        # significa que qualquer coisa mais reta que raio 1000 vira 1000.
-        final_curvature = np.clip(avg_curv_rad, 0, 1000)
-
-        # --- 5. CÁLCULO DE OFFSET ---
-        try:
-            # Posição X das faixas na base (y=h)
-            left_lane_x = left_fit[0]*h**2 + left_fit[1]*h + left_fit[2]
-            right_lane_x = right_fit[0]*h**2 + right_fit[1]*h + right_fit[2]
-            
-            lane_center = (left_lane_x + right_lane_x) / 2.0
-            image_center = w / 2.0
-            
-            raw_offset = image_center - lane_center
-        except Exception:
-            raw_offset = 0.0
-
-        # CLAMP OFFSET [-100, 100]
-        final_offset = np.clip(raw_offset, -100, 100)
-
-        return left_fit, right_fit, final_offset, final_curvature
+        return self.average_slope_intercept(binary_warped, left_lane_inds, right_lane_inds)
     
     def average_slope_intercept(self, binary_warped, left_lane_inds, right_lane_inds):
         # Calcular a média dos coeficientes das linhas detectadas
@@ -397,32 +316,28 @@ class RobotVision:
         rightx = nonzerox[right_lane_inds]
         righty = nonzeroy[right_lane_inds]
 
-        h, w = binary_warped.shape # Altura total da imagem warped
-        
-        # --- INÍCIO DA NORMALIZAÇÃO (CENTRALIZAÇÃO + SCALING) ---
+        # --- INÍCIO DA NORMALIZAÇÃO (CENTRALIZAÇÃO) ---
 
+        # 1. Calcular a média de Y
+        # Usamos np.mean(nonzeroy) ou h / 2, dependendo do que for mais representativo.
+        # Usar a média de todos os pontos Y é geralmente mais robusto.
         if len(nonzeroy) > 0:
             y_mean = np.mean(nonzeroy)
         else:
-            y_mean = h / 2
-        
-        # Fator de escala: a altura total da imagem (ou o máximo de Y)
-        # Se os dados Y forem de 0 a 720, o fator de escala é 720.
-        # Isso transforma as coordenadas Y em valores entre aproximadamente -0.5 e 0.5.
-        y_scale_factor = h/100 # Usar a altura total é a abordagem mais simples e robusta
-        
-        # 2. Centralizar e Aplicar Scaling aos dados Y
-        # Subtrair a média e, em seguida, dividir pela altura (scaling)
-        lefty_normalized = (lefty - y_mean) / y_scale_factor
-        righty_normalized = (righty - y_mean) / y_scale_factor
+            y_mean = h / 2 # Valor de fallback
+
+        # 2. Subtrair a média dos dados Y (Centralização)
+        lefty_normalized = lefty - y_mean
+        righty_normalized = righty - y_mean
 
         # --- FIM DA NORMALIZAÇÃO ---
 
         # Ajustar uma linha polinomial de 2º grau (quadrática) aos pixels das faixas
         try:
-            # Usamos os dados Y normalizados E ESCALONADOS
+            # Usamos os dados Y normalizados para o ajuste, mas os dados X originais
             left_fit_normalized = np.polyfit(lefty_normalized, leftx, 2)
             right_fit_normalized = np.polyfit(righty_normalized, rightx, 2)
+
         except (np.linalg.LinAlgError, ValueError, TypeError):
             # Em caso de erro, retornar coeficientes que definem uma linha horizontal nula
             left_fit_normalized = np.array([0, 0, 0])
@@ -434,6 +349,39 @@ class RobotVision:
         # eles são válidos APENAS para coordenadas Y que foram subtraídas por `y_mean`.
         
         return left_fit_normalized, right_fit_normalized , y_mean
+    
+    def calculate_curvature(self, left_fit, right_fit, img_height):
+        # Calcular o raio de curvatura das faixas
+
+        # Fórmula do raio de curvatura
+        if(left_fit[0] == 0 or right_fit[0] == 0):
+            return float('inf')
+        left_curverad = ((1 + (2*left_fit[0]*img_height + left_fit[1])**2)**1.5) / np.absolute(2*left_fit[0])
+        right_curverad = ((1 + (2*right_fit[0]*img_height + right_fit[1])**2)**1.5) / np.absolute(2*right_fit[0])
+
+        # Retorna a média dos dois raios
+        return (left_curverad + right_curverad) / 2
+    
+    def calculate_center_distance(self, left_fit, right_fit, img_width):
+        # Calcular a distância do centro do robô ao centro da faixa
+
+        try:
+            # Posição da faixa esquerda e direita na base da imagem
+            left_lane_base = left_fit[0]*(img_width)**2 + left_fit[1]*(img_width) + left_fit[2]
+            right_lane_base = right_fit[0]*(img_width)**2 + right_fit[1]*(img_width) + right_fit[2]
+
+            # Centro da faixa
+            lane_center = (left_lane_base + right_lane_base) / 2.0
+
+            # Centro da imagem (posição do robô)
+            image_center = (img_width) / 2.0
+
+            # Distância do centro do robô ao centro da faixa
+            center_distance = image_center - lane_center
+        except (TypeError, ValueError, np.linalg.LinAlgError):
+            center_distance = 0.0
+        
+        return center_distance
 
     def debug_camera(self,frame):
         # Esta função visa apenas processar e retornar a imagem marcada.
@@ -552,9 +500,9 @@ class RobotVision:
             # Exibe a interceção mais proxima
             cv2.putText(img_marcada_hough, f"Intersecção mais Proxima: ({(self.vision_data['closest_inter_dist']):.2f})", (10, h - 40),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1)
-        a = None
+        img_bin = None
         try:
-            a = cv2.warpPerspective(binary_warped_img,Minv,(w,h))
+            img_bin = cv2.warpPerspective(binary_warped_img,Minv,(w,h))
         except Exception as e:
             rospy.logwarn(e)
 
@@ -570,7 +518,7 @@ class RobotVision:
         except:
             pass
             
-        return img_marcada , img_marcada_hough , a
+        return img_marcada , img_marcada_hough , img_bin
     
     def line_inter(self, line1, line2):
         tolerance = 1e-6
@@ -753,53 +701,6 @@ class RobotVision:
            
             if h and closest_inter[1] != None: a = (h - closest_inter[1] -150)
         return a, lines, min_angle_line, closest_inter, min_angle, area_left, area_right, norm_angle_output, norm_offset_x_output
-
-    def calculate_robust_offset(self, left_fit, right_fit, h, w):
-            """
-            Calcula o offset considerando o caso de apenas uma faixa ser detectada.
-            """
-            # DEFINA ISSO EMPIRICAMENTE: Largura da pista na imagem warped (em pixels)
-            # Meça isso na sua imagem warped quando o robô estiver centralizado.
-
-            
-            # Posição X das bases das faixas (y = h)
-            left_x = left_fit[0]*h**2 + left_fit[1]*h + left_fit[2]
-            right_x = right_fit[0]*h**2 + right_fit[1]*h + right_fit[2]
-
-            # Verifica se os fits são válidos (não são [0,0,0])
-            left_detected = np.sum(np.abs(left_fit)) > 1e-4
-            right_detected = np.sum(np.abs(right_fit)) > 1e-4
-            
-            lane_center = w / 2 # Fallback: assume que estamos no meio
-
-            if left_detected and right_detected:
-                # Caso ideal: ambas detectadas
-                lane_center = (left_x + right_x) / 2.0
-                
-                # Verificação de sanidade: A largura calculada faz sentido?
-                calculated_width = right_x - left_x
-                if abs(calculated_width - TRACK_WIDTH_PIXELS) > 200:
-                    # Largura absurda? Confie na faixa que tem mais pixels ou na anterior
-                    # (Simplificação: Confia na que estiver mais perto do esperado)
-                    pass 
-
-            elif left_detected and not right_detected:
-                # Só enxerga a esquerda -> Projeta a direita virtualmente
-                lane_center = (left_x + (left_x + TRACK_WIDTH_PIXELS)) / 2.0
-                
-            elif right_detected and not left_detected:
-                # Só enxerga a direita -> Projeta a esquerda virtualmente
-                lane_center = ((right_x - TRACK_WIDTH_PIXELS) + right_x) / 2.0
-                
-            else:
-                # Nenhuma detectada: Retorna 0.0 ou o último valor conhecido
-                return 0.0
-
-            image_center = w / 2.0
-            offset = image_center - lane_center
-            
-            # Clamp para segurança [-100, 100]
-            return np.clip(offset, -100, 100)
 
 if __name__ == '__main__':
     try:

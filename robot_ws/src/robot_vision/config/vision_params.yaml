@@ -3,13 +3,13 @@ vision_params:
     index: 2
     flip: true
   detection:
-    margin: 100
+    margin: 70
     nwindows: 50
-    minpix: 150
+    minpix: 300
     track_width_px: 600
   thresholds: 
-    binary_threshold: [130,250]
-    sobel_threshold: [30,130]
+    binary_threshold: [160,255]
+    sobel_threshold: [20,100]
   perspective:
     src_pc: [[0.03, 0.25], [0.97, 0.25], [1, 1], [0, 1.0]]
   node_config:
