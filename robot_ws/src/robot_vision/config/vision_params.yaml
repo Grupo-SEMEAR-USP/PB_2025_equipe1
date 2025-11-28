@@ -1,17 +1,21 @@
 vision_params:
   camera:
-    index: 2
+    index: -1 # Se for = -1 Reconhece como Realsense
     flip: true
+    #Parametros da Realsense
+    rs:
+      width: 640
+      height: 480
   detection:
     margin: 70
     nwindows: 50
     minpix: 300
     track_width_px: 600
   thresholds: 
-    binary_threshold: [160,255]
-    sobel_threshold: [20,100]
+    binary_threshold: [100,255] #S
+    sobel_threshold: [160,255] #
   perspective:
-    src_pc: [[0.03, 0.25], [0.97, 0.25], [1, 1], [0, 1.0]]
+    src_pc: [[0.20, 0.40], [0.80, 0.40], [1, 1], [0, 1.0]]
   node_config:
     rate: 20 #Frequency in Hz
     debug_mode: true

@@ -1,4 +1,5 @@
 import rospy
+import pyrealsense2 as rs
 import cv2
 import numpy as np
 import threading
@@ -19,6 +20,8 @@ try:
     SRC_PC= rospy.get_param('vision_params/perspective/src_pc')
     NODE_RATE_HZ = rospy.get_param('vision_params/node_config/rate')
     TRACK_WIDTH_PIXELS = rospy.get_param('vision_params/detection/track_width_px')
+    RS_WIDTH = rospy.get_param('vision_params/camera/rs/width')
+    RS_HEIGHT = rospy.get_param('vision_params/camera/rs/height')
 
 except Exception as e:
     rospy.logwarn(f"Erro ao carregar parâmetros de configuração: {e}... Carregando valores padrão.")
@@ -46,8 +49,13 @@ class RobotVision:
         self.queue_size = int(0.5 * NODE_RATE_HZ) # 5 amostras
         self.vision_queue = deque(maxlen=self.queue_size)
 
-        # Variáveis internas
-        self.cam = cv2.VideoCapture(CAMERA_INDEX, cv2.CAP_V4L2) # Garante backend V4L2
+        if(CAMERA_INDEX==-1):
+            self.realsense_init()
+            self.height, self.width = [RS_HEIGHT,RS_WIDTH]
+        else:
+            self.cam = cv2.VideoCapture(CAMERA_INDEX, cv2.CAP_V4L2) # Garante backend V4L2
+            self.height, self.width = self.cam.read()[1].shape[:2]
+        
         self.Minv = None
         self.binary_warped_img = None
         self.warped_img = None
@@ -71,13 +79,38 @@ class RobotVision:
             'norm_offset_hough': 0.0
         }
 
-        self.height, self.width = self.cam.read()[1].shape[:2]
 
         self.cam_thread = threading.Thread(target=self.camera_loop, daemon=True)
         self.cam_thread.start()
         self.pub_thread = threading.Thread(target=self.publishing_loop, daemon=True)
         self.pub_thread.start()
 
+    def realsense_init(self):
+        # Configure depth and color streams
+        self.rs_pipeline = rs.pipeline()
+        self.rs_config = rs.config()
+
+        # Get device product line for setting a supporting resolution
+        self.rs_pipeline_wrapper = rs.pipeline_wrapper(self.rs_pipeline)
+        self.rs_pipeline_profile = self.rs_config.resolve(self.rs_pipeline_wrapper)
+        self.rs_device = self.rs_pipeline_profile.get_device()
+        self.rs_device_product_line = str(self.rs_device.get_info(rs.camera_info.product_line))
+
+        found_rgb = False
+        for s in self.rs_device.sensors:
+            if s.get_info(rs.camera_info.name) == 'RGB Camera':
+                found_rgb = True
+                break
+        if not found_rgb:
+            print("The demo requires Depth camera with Color sensor")
+            exit(0)
+
+        self.rs_config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
+        self.rs_config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
+
+        # Start streaming
+        self.rs_pipeline.start(self.rs_config)
+        
     def publishing_loop(self):
         # Define a taxa de publicação
         rate = rospy.Rate(NODE_RATE_HZ) 
@@ -102,31 +135,45 @@ class RobotVision:
             
             rate.sleep()
 
-    def camera_loop(self):
-        if not self.cam.isOpened():
-          rospy.logwarn("Erro fatal: Não foi possível abrir nenhuma câmera. Verifique as conexões.")
-          return
+    def camera_loop(self):  
+        if(CAMERA_INDEX!=-1):
+            if not self.cam.isOpened():
+                rospy.logwarn("Erro fatal: Não foi possível abrir nenhuma câmera. Verifique as conexões.")
+                return
 
-        # Logo após abrir a câmera e antes do loop principal do ROS:
-        for i in range(20):
-            ret, frame = self.cam.read()
-            self.process_frame(frame)
-            
-            # Apenas lendo para dar tempo ao sensor se ajustar à luz
-    
+            # Logo após abrir a câmera e antes do loop principal do ROS:
+            for i in range(20):
+                ret, frame = self.cam.read()
+                self.process_frame(frame)
+
         while not rospy.is_shutdown():
-            ret, frame = self.cam.read()
+
+            if CAMERA_INDEX!=-1:
+                ret, frame = self.cam.read()
+
+                if not ret:
+                    rospy.logwarn("Erro: Não foi possível ler o frame da câmera.")
+                    break
+            else:
+                # Wait for a coherent pair of frames: depth and color
+                frames = self.rs_pipeline.wait_for_frames()
+                depth_frame = frames.get_depth_frame()
+                color_frame = frames.get_color_frame()
+                if not depth_frame or not color_frame:
+                    continue
+
+                # Convert images to numpy arrays
+                depth_image = np.asanyarray(depth_frame.get_data())
+                color_image = np.asanyarray(color_frame.get_data())
+
+                # Apply colormap on depth image (image must be converted to 8-bit per pixel first)
+                depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
+
+                frame = color_image
+
+
             if rospy.get_param('vision_params/camera/flip'):  frame = cv2.flip(frame, -1)  # Gira a imagem 180 graus se necessário
             self.process_frame(frame)
-            
-            if not ret:
-                rospy.logwarn("Erro: Não foi possível ler o frame da câmera.")
-                break
-
-            self.vision_queue.append({
-            'center_distance': self.vision_data['center_distance'],
-            'curvature_radius': self.vision_data['curvature_radius']
-            })
             
             sw_img , hg_img,bin_img = self.debug_camera(frame)
             if rospy.get_param('vision_params/node_config/debug_mode'):
@@ -190,6 +237,13 @@ class RobotVision:
         self.vision_data['norm_angle_hough'] = norm_angle
         self.vision_data['norm_offset_hough'] = norm_offset_hough
 
+
+        self.vision_queue.append({
+        'center_distance': self.vision_data['center_distance'],
+        'curvature_radius': self.vision_data['curvature_radius'],
+        'closest_inter_dist': self.vision_data['closest_inter_dist'],
+        })
+
     def binary_threshold(self, img):
         # Aplicar limiarização binária na imagem
         #Isola os pixels das faixas usando limiares de cor e gradiente.
@@ -221,7 +275,7 @@ class RobotVision:
     
     def perspective_transform(self, img):
         # Aplicar transformação de perspectiva
-        h, w = img.shape[:2]
+        h, w = [self.height,self.width]
 
         TL = SRC_PC[0]
         TR = SRC_PC[1]
@@ -401,7 +455,7 @@ class RobotVision:
             # Retorna a imagem original se os dados não estiverem prontos
             return np.zeros((self.height, self.width, 3), dtype=np.uint8) if cam_img is None else cam_img
 
-        h, w = cam_img.shape[:2]
+        h, w = [self.height,self.width]
         ploty = np.linspace(0, h - 1, h)
         
         # 2. Calcular as posições X das faixas
@@ -532,6 +586,9 @@ class RobotVision:
 
         px = ((x1*y2 - y1*x2)*(x3 - x4) - (x1 - x2)*(x3*y4 - y3*x4)) / determ
         py = ((x1*y2 - y1*x2)*(y3 - y4) - (y1 - y2)*(x3*y4 - y3*x4)) / determ
+
+  
+        
         return int(px), int(py)
 
     def get_roi_mask(self, img_shape, src_pc):
@@ -598,7 +655,7 @@ class RobotVision:
 
     def hough_line_detection(self, frame):
         # O frame recebido aqui é a imagem binária/escala de cinza de 8 bits
-        h, w = frame.shape[:2]
+        h, w = [self.height,self.width]
         
         # --- 1. PRÉ-PROCESSAMENTO (Simplificado, mantendo Canny e fechar) ---
         
@@ -699,7 +756,7 @@ class RobotVision:
             
         # Retorna os resultados brutos (para debug) e os normalizados
            
-            if h and closest_inter[1] != None: a = (h - closest_inter[1] -150)
+            if h and closest_inter[1] != None: a = (h - closest_inter[1])
         return a, lines, min_angle_line, closest_inter, min_angle, area_left, area_right, norm_angle_output, norm_offset_x_output
 
 if __name__ == '__main__':
