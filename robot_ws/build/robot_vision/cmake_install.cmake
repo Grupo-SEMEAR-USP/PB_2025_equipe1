@@ -166,6 +166,10 @@ if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_
   file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/robot_vision/launch" TYPE DIRECTORY FILES "/home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/src/robot_vision/launch/")
 endif()
 
+if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_COMPONENT)
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/robot_vision/config" TYPE DIRECTORY FILES "/home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/src/robot_vision/config/")
+endif()
+
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
   include("/home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/build/robot_vision/gtest/cmake_install.cmake")

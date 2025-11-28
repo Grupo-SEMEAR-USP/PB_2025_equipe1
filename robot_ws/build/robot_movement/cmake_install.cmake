@@ -179,6 +179,10 @@ if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_
 endif()
 
 if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_COMPONENT)
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/robot_movement" TYPE PROGRAM FILES "/home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/build/robot_movement/catkin_generated/installspace/mov_controller.py")
+endif()
+
+if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_COMPONENT)
   file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/robot_movement/launch" TYPE DIRECTORY FILES "/home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/src/robot_movement/launch/")
 endif()
 

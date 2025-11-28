@@ -3,4 +3,6 @@
           CURVATURE
           OFFSET-VAL
           OFFSET
+          CI_DIST-VAL
+          CI_DIST
 ))

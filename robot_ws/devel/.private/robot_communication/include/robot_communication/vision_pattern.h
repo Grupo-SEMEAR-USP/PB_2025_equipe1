@@ -25,11 +25,13 @@ struct vision_pattern_
 
   vision_pattern_()
     : curvature(0.0)
-    , offset(0.0)  {
+    , offset(0.0)
+    , ci_dist(0.0)  {
     }
   vision_pattern_(const ContainerAllocator& _alloc)
     : curvature(0.0)
-    , offset(0.0)  {
+    , offset(0.0)
+    , ci_dist(0.0)  {
   (void)_alloc;
     }
 
@@ -40,6 +42,9 @@ struct vision_pattern_
 
    typedef float _offset_type;
   _offset_type offset;
+
+   typedef float _ci_dist_type;
+  _ci_dist_type ci_dist;
 
 
 
@@ -71,7 +76,8 @@ template<typename ContainerAllocator1, typename ContainerAllocator2>
 bool operator==(const ::robot_communication::vision_pattern_<ContainerAllocator1> & lhs, const ::robot_communication::vision_pattern_<ContainerAllocator2> & rhs)
 {
   return lhs.curvature == rhs.curvature &&
-    lhs.offset == rhs.offset;
+    lhs.offset == rhs.offset &&
+    lhs.ci_dist == rhs.ci_dist;
 }
 
 template<typename ContainerAllocator1, typename ContainerAllocator2>
@@ -128,12 +134,12 @@ struct MD5Sum< ::robot_communication::vision_pattern_<ContainerAllocator> >
 {
   static const char* value()
   {
-    return "6f7fe8c9b73d40487b6bbeb43e558374";
+    return "a56f55df37df7ce0e374235fbf98d766";
   }
 
   static const char* value(const ::robot_communication::vision_pattern_<ContainerAllocator>&) { return value(); }
-  static const uint64_t static_value1 = 0x6f7fe8c9b73d4048ULL;
-  static const uint64_t static_value2 = 0x7b6bbeb43e558374ULL;
+  static const uint64_t static_value1 = 0xa56f55df37df7ce0ULL;
+  static const uint64_t static_value2 = 0xe374235fbf98d766ULL;
 };
 
 template<class ContainerAllocator>
@@ -155,6 +161,7 @@ struct Definition< ::robot_communication::vision_pattern_<ContainerAllocator> >
     return "# vision_pattern.msg\n"
 "float32 curvature\n"
 "float32 offset\n"
+"float32 ci_dist\n"
 ;
   }
 
@@ -175,6 +182,7 @@ namespace serialization
     {
       stream.next(m.curvature);
       stream.next(m.offset);
+      stream.next(m.ci_dist);
     }
 
     ROS_DECLARE_ALLINONE_SERIALIZER
@@ -201,6 +209,10 @@ struct Printer< ::robot_communication::vision_pattern_<ContainerAllocator> >
       s << std::endl;
     s << indent << "offset: ";
     Printer<float>::stream(s, indent + "  ", v.offset);
+    if (true || !indent.empty())
+      s << std::endl;
+    s << indent << "ci_dist: ";
+    Printer<float>::stream(s, indent + "  ", v.ci_dist);
   }
 };
 

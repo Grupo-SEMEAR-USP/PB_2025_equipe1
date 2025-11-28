@@ -1,7 +1,7 @@
 vision_params:
   camera:
-    index: -1 # Se for = -1 Reconhece como Realsense
-    flip: true
+    index: 0 # Se for = -1 Reconhece como Realsense
+    flip: false
     #Parametros da Realsense
     rs:
       width: 640

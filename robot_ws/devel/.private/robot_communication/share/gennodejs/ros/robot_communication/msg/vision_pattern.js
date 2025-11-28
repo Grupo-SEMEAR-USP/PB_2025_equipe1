@@ -20,6 +20,7 @@ class vision_pattern {
       // initObj === null is a special case for deserialization where we don't initialize fields
       this.curvature = null;
       this.offset = null;
+      this.ci_dist = null;
     }
     else {
       if (initObj.hasOwnProperty('curvature')) {
@@ -34,6 +35,12 @@ class vision_pattern {
       else {
         this.offset = 0.0;
       }
+      if (initObj.hasOwnProperty('ci_dist')) {
+        this.ci_dist = initObj.ci_dist
+      }
+      else {
+        this.ci_dist = 0.0;
+      }
     }
   }
 
@@ -43,6 +50,8 @@ class vision_pattern {
     bufferOffset = _serializer.float32(obj.curvature, buffer, bufferOffset);
     // Serialize message field [offset]
     bufferOffset = _serializer.float32(obj.offset, buffer, bufferOffset);
+    // Serialize message field [ci_dist]
+    bufferOffset = _serializer.float32(obj.ci_dist, buffer, bufferOffset);
     return bufferOffset;
   }
 
@@ -54,11 +63,13 @@ class vision_pattern {
     data.curvature = _deserializer.float32(buffer, bufferOffset);
     // Deserialize message field [offset]
     data.offset = _deserializer.float32(buffer, bufferOffset);
+    // Deserialize message field [ci_dist]
+    data.ci_dist = _deserializer.float32(buffer, bufferOffset);
     return data;
   }
 
   static getMessageSize(object) {
-    return 8;
+    return 12;
   }
 
   static datatype() {
@@ -68,7 +79,7 @@ class vision_pattern {
 
   static md5sum() {
     //Returns md5sum for a message object
-    return '6f7fe8c9b73d40487b6bbeb43e558374';
+    return 'a56f55df37df7ce0e374235fbf98d766';
   }
 
   static messageDefinition() {
@@ -77,6 +88,7 @@ class vision_pattern {
     # vision_pattern.msg
     float32 curvature
     float32 offset
+    float32 ci_dist
     `;
   }
 
@@ -98,6 +110,13 @@ class vision_pattern {
     }
     else {
       resolved.offset = 0.0
+    }
+
+    if (msg.ci_dist !== undefined) {
+      resolved.ci_dist = msg.ci_dist;
+    }
+    else {
+      resolved.ci_dist = 0.0
     }
 
     return resolved;

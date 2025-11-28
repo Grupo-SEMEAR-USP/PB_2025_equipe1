@@ -16,6 +16,11 @@
     :reader offset
     :initarg :offset
     :type cl:float
+    :initform 0.0)
+   (ci_dist
+    :reader ci_dist
+    :initarg :ci_dist
+    :type cl:float
     :initform 0.0))
 )
 
@@ -36,6 +41,11 @@
 (cl:defmethod offset-val ((m <vision_pattern>))
   (roslisp-msg-protocol:msg-deprecation-warning "Using old-style slot reader robot_communication-msg:offset-val is deprecated.  Use robot_communication-msg:offset instead.")
   (offset m))
+
+(cl:ensure-generic-function 'ci_dist-val :lambda-list '(m))
+(cl:defmethod ci_dist-val ((m <vision_pattern>))
+  (roslisp-msg-protocol:msg-deprecation-warning "Using old-style slot reader robot_communication-msg:ci_dist-val is deprecated.  Use robot_communication-msg:ci_dist instead.")
+  (ci_dist m))
 (cl:defmethod roslisp-msg-protocol:serialize ((msg <vision_pattern>) ostream)
   "Serializes a message object of type '<vision_pattern>"
   (cl:let ((bits (roslisp-utils:encode-single-float-bits (cl:slot-value msg 'curvature))))
@@ -44,6 +54,11 @@
     (cl:write-byte (cl:ldb (cl:byte 8 16) bits) ostream)
     (cl:write-byte (cl:ldb (cl:byte 8 24) bits) ostream))
   (cl:let ((bits (roslisp-utils:encode-single-float-bits (cl:slot-value msg 'offset))))
+    (cl:write-byte (cl:ldb (cl:byte 8 0) bits) ostream)
+    (cl:write-byte (cl:ldb (cl:byte 8 8) bits) ostream)
+    (cl:write-byte (cl:ldb (cl:byte 8 16) bits) ostream)
+    (cl:write-byte (cl:ldb (cl:byte 8 24) bits) ostream))
+  (cl:let ((bits (roslisp-utils:encode-single-float-bits (cl:slot-value msg 'ci_dist))))
     (cl:write-byte (cl:ldb (cl:byte 8 0) bits) ostream)
     (cl:write-byte (cl:ldb (cl:byte 8 8) bits) ostream)
     (cl:write-byte (cl:ldb (cl:byte 8 16) bits) ostream)
@@ -63,6 +78,12 @@
       (cl:setf (cl:ldb (cl:byte 8 16) bits) (cl:read-byte istream))
       (cl:setf (cl:ldb (cl:byte 8 24) bits) (cl:read-byte istream))
     (cl:setf (cl:slot-value msg 'offset) (roslisp-utils:decode-single-float-bits bits)))
+    (cl:let ((bits 0))
+      (cl:setf (cl:ldb (cl:byte 8 0) bits) (cl:read-byte istream))
+      (cl:setf (cl:ldb (cl:byte 8 8) bits) (cl:read-byte istream))
+      (cl:setf (cl:ldb (cl:byte 8 16) bits) (cl:read-byte istream))
+      (cl:setf (cl:ldb (cl:byte 8 24) bits) (cl:read-byte istream))
+    (cl:setf (cl:slot-value msg 'ci_dist) (roslisp-utils:decode-single-float-bits bits)))
   msg
 )
 (cl:defmethod roslisp-msg-protocol:ros-datatype ((msg (cl:eql '<vision_pattern>)))
@@ -73,18 +94,19 @@
   "robot_communication/vision_pattern")
 (cl:defmethod roslisp-msg-protocol:md5sum ((type (cl:eql '<vision_pattern>)))
   "Returns md5sum for a message object of type '<vision_pattern>"
-  "6f7fe8c9b73d40487b6bbeb43e558374")
+  "a56f55df37df7ce0e374235fbf98d766")
 (cl:defmethod roslisp-msg-protocol:md5sum ((type (cl:eql 'vision_pattern)))
   "Returns md5sum for a message object of type 'vision_pattern"
-  "6f7fe8c9b73d40487b6bbeb43e558374")
+  "a56f55df37df7ce0e374235fbf98d766")
 (cl:defmethod roslisp-msg-protocol:message-definition ((type (cl:eql '<vision_pattern>)))
   "Returns full string definition for message of type '<vision_pattern>"
-  (cl:format cl:nil "# vision_pattern.msg~%float32 curvature~%float32 offset~%~%"))
+  (cl:format cl:nil "# vision_pattern.msg~%float32 curvature~%float32 offset~%float32 ci_dist~%~%"))
 (cl:defmethod roslisp-msg-protocol:message-definition ((type (cl:eql 'vision_pattern)))
   "Returns full string definition for message of type 'vision_pattern"
-  (cl:format cl:nil "# vision_pattern.msg~%float32 curvature~%float32 offset~%~%"))
+  (cl:format cl:nil "# vision_pattern.msg~%float32 curvature~%float32 offset~%float32 ci_dist~%~%"))
 (cl:defmethod roslisp-msg-protocol:serialization-length ((msg <vision_pattern>))
   (cl:+ 0
+     4
      4
      4
 ))
@@ -93,4 +115,5 @@
   (cl:list 'vision_pattern
     (cl:cons ':curvature (curvature msg))
     (cl:cons ':offset (offset msg))
+    (cl:cons ':ci_dist (ci_dist msg))
 ))
