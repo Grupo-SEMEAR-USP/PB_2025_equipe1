@@ -20,5 +20,5 @@ vision_params:
     rate: 20 #Frequency in Hz
     debug_mode:
       bin_img: false
-      hg_img: false
+      hg_img: true
       sw_img: false

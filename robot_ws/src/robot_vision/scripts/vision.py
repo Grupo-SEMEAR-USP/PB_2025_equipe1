@@ -124,7 +124,7 @@ class RobotVision:
                 # Pega a média de todos os 'curvature_radius' na fila
                 avg_curvature = np.mean([d['curvature_radius'] for d in self.vision_queue])
                 # Pega a média de todos os 'closest_intersection_dist' na fila
-                avg_ci_dist = np.mean([d['ci_dist'] for d in self.vision_queue])
+                avg_ci_dist = self.vision_data['closest_inter_dist']
                 
                 # 2. Normalizar os Valores
                 self.avg_offset = avg_offset
@@ -156,11 +156,14 @@ class RobotVision:
                 if not ret:
                     rospy.logwarn("Erro: Não foi possível ler o frame da câmera.")
                     break
+                if rospy.get_param('vision_params/camera/flip'):  frame = cv2.flip(frame, -1)  # Gira a imagem 180 graus se necessário
+                #processa  o frame depois dela ter sido flipadda(ou não, depende da configuração)
+                self.process_frame(frame)
             else:
                 # Wait for a coherent pair of frames: depth and color
-                frames = self.rs_pipeline.wait_for_frames()
-                depth_frame = frames.get_depth_frame()
-                color_frame = frames.get_color_frame()
+                rs_frames = self.rs_pipeline.wait_for_frames()
+                depth_frame = rs_frames.get_depth_frame()
+                color_frame = rs_frames.get_color_frame()
                 if not depth_frame or not color_frame:
                     continue
 
@@ -171,24 +174,34 @@ class RobotVision:
                 # Apply colormap on depth image (image must be converted to 8-bit per pixel first)
                 depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
 
-                frame = color_image
+                frames = [color_image,depth_image]
+                if rospy.get_param('vision_params/camera/flip'):  frames[0] = cv2.flip(frames[0], -1)  # Gira a imagem 180 graus se necessário
+                frame = frames[0]
+                #processa  o frame depois dela ter sido flipadda(ou não, depende da configuração)
+                self.process_frame(frames)
 
 
-            if rospy.get_param('vision_params/camera/flip'):  frame = cv2.flip(frame, -1)  # Gira a imagem 180 graus se necessário
-            #processa  o frame depois dela ter sido flipadda(ou não, depende da configuração)
-            self.process_frame(frame)
+
                 
             debug = rospy.get_param('vision_params/node_config/debug_mode')
             
             if debug['sw_img'] or debug['hg_img'] or debug['bin_img']:
                 sw_img , hg_img,bin_img = self.debug_camera(frame)
+                
+                # cv2.imshow("Prof",cv2.flip(depth_image,-1))
+                # cv2.imshow("Prof Color Map",cv2.flip(depth_colormap,-1))
 
                 if debug['sw_img']: cv2.imshow("Sliding Windowns Detect", sw_img)
                 if debug['hg_img']: cv2.imshow("Hough Detect", hg_img)
                 if debug['bin_img']: cv2.imshow("Binary Image", bin_img)
             cv2.waitKey(1)
 
-    def process_frame(self, frame):
+    def process_frame(self, g_frame):
+        if CAMERA_INDEX != -1:
+            frame = g_frame
+        else:
+            frame = g_frame[0]
+
         # Processamento do frame para detecção de faixas
         img_warped = self.perspective_transform(frame)
         binary_warped = self.binary_threshold(img_warped)
@@ -232,8 +245,16 @@ class RobotVision:
         self.vision_data['area_left'] = area_left
         self.vision_data['area_right'] = area_right
         self.vision_data['closest_intersection'] = closest_inter
-        if cinter_dist != None:
+        
+        if CAMERA_INDEX== -1:depth_f = g_frame[1]
+        if cinter_dist != None and closest_inter != None:
             self.vision_data['closest_inter_dist'] = cinter_dist
+            if CAMERA_INDEX == -1 and g_frame != None:   
+                cx , cy = closest_inter
+                self.vision_data['closest_inter_dist'] = depth_f[cx][cy]/1000
+        else:
+             self.vision_data['closest_inter_dist'] = self.height
+             if CAMERA_INDEX == -1: self.vision_data['closest_inter_dist'] = depth_f[340][0]
         self.vision_data['min_angle'] = min_angle
         self.vision_data['min_angle_line'] = min_angle_line
         self.vision_data['lines'] = lines

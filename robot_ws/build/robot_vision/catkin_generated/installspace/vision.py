@@ -28,12 +28,12 @@ except Exception as e:
     NWINDOWS = 9
     MARGIN = 100
     MINPIX = 50
-    CAMERA_INDEX = 2
+    CAMERA_INDEX = 0
     S_TRESH = (160, 255)
     SOBEL_TRESH = (20, 100)
     SRC_PC= [
-        (0.15, 0.55),
-        (0.75, 0.55),
+        (0.20, 0.40),
+        (0.80, 0.40),
         (1.0, 1.0),
         (0.0, 1.0)
     ]
@@ -147,7 +147,6 @@ class RobotVision:
             # Logo após abrir a câmera e antes do loop principal do ROS:
             for i in range(20):
                 ret, frame = self.cam.read()
-                self.process_frame(frame)
 
         while not rospy.is_shutdown():
 
@@ -176,28 +175,33 @@ class RobotVision:
 
 
             if rospy.get_param('vision_params/camera/flip'):  frame = cv2.flip(frame, -1)  # Gira a imagem 180 graus se necessário
+            #processa  o frame depois dela ter sido flipadda(ou não, depende da configuração)
             self.process_frame(frame)
+                
+            debug = rospy.get_param('vision_params/node_config/debug_mode')
             
-            sw_img , hg_img,bin_img = self.debug_camera(frame)
-            if rospy.get_param('vision_params/node_config/debug_mode'):
-                cv2.imshow("Sliding Windowns Detect", sw_img)
-                cv2.imshow("Hough Detect", hg_img)
-                cv2.imshow("Binary Image", bin_img)
+            if debug['sw_img'] or debug['hg_img'] or debug['bin_img']:
+                sw_img , hg_img,bin_img = self.debug_camera(frame)
+
+                if debug['sw_img']: cv2.imshow("Sliding Windowns Detect", sw_img)
+                if debug['hg_img']: cv2.imshow("Hough Detect", hg_img)
+                if debug['bin_img']: cv2.imshow("Binary Image", bin_img)
             cv2.waitKey(1)
-
-
-        self.cam.release()
 
     def process_frame(self, frame):
         # Processamento do frame para detecção de faixas
         img_warped = self.perspective_transform(frame)
-
         binary_warped = self.binary_threshold(img_warped)
+
         self.binary_warped_img = binary_warped
 
+        #Aplicando Algoritimos para detecção da faixa
         left_fit_normalized, right_fit_normalized , y_mean = self.sliding_window_search(binary_warped)
+        hg_img = self.binary_threshold(frame.copy())
+        cinter_dist ,lines, min_angle_line, closest_inter, min_angle, area_left, area_right, norm_angle, norm_offset_hough = self.hough_line_detection(hg_img)
 
-        # --- DESNORMALIZAÇÃO ---
+
+    # --- DESNORMALIZAÇÃO ---
         A_prime_L, B_prime_L, C_prime_L = left_fit_normalized
         A_prime_R, B_prime_R, C_prime_R = right_fit_normalized
 
@@ -216,8 +220,6 @@ class RobotVision:
         self.right_fit = np.array([A_R, B_R, C_R]) 
         # ----------------------------------------------
 
-        hg_img = self.binary_threshold(frame.copy())
-        cinter_dist ,lines, min_angle_line, closest_inter, min_angle, area_left, area_right, norm_angle, norm_offset_hough = self.hough_line_detection(hg_img)
         # --- ATUALIZAÇÃO DO DICIONÁRIO vision_data ---
         # Valores diretos retornados pela função atualizada
         
@@ -576,6 +578,8 @@ class RobotVision:
             
         return img_marcada , img_marcada_hough , img_bin
     
+
+#hough Algorithm
     def line_inter(self, line1, line2):
         tolerance = 1e-6
         x1, y1, x2, y2 = line1

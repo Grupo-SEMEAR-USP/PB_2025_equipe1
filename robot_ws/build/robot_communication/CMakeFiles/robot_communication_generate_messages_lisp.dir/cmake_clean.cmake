@@ -1,7 +1,7 @@
 file(REMOVE_RECURSE
-  "/home/rmajetson/PB_2025_equipe1/robot_ws/devel/.private/robot_communication/share/common-lisp/ros/robot_communication/msg/encoder_comm.lisp"
-  "/home/rmajetson/PB_2025_equipe1/robot_ws/devel/.private/robot_communication/share/common-lisp/ros/robot_communication/msg/velocity_comm.lisp"
-  "/home/rmajetson/PB_2025_equipe1/robot_ws/devel/.private/robot_communication/share/common-lisp/ros/robot_communication/msg/vision_pattern.lisp"
+  "/home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/devel/.private/robot_communication/share/common-lisp/ros/robot_communication/msg/encoder_comm.lisp"
+  "/home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/devel/.private/robot_communication/share/common-lisp/ros/robot_communication/msg/velocity_comm.lisp"
+  "/home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/devel/.private/robot_communication/share/common-lisp/ros/robot_communication/msg/vision_pattern.lisp"
   "CMakeFiles/robot_communication_generate_messages_lisp"
 )
 

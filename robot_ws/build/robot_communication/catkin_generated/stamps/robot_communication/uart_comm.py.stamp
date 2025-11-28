@@ -7,7 +7,7 @@ from robot_communication.msg import encoder_comm, velocity_comm
 
 # Configurações da Serial
 # Verifique se é /dev/ttyUSB0 ou /dev/ttyACM0 com 'ls /dev/tty*'
-SERIAL_PORT = "/dev/ttyACM0" 
+SERIAL_PORT = "/dev/ttyUSB0" 
 BAUD_RATE = 115200
 
 # Definições do Protocolo (Iguais ao ESP32)
