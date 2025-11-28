@@ -1,6 +1,6 @@
 wheel_specification:
-  track_width: 0.5 # m
-  wheel_radius: 0.05 # m
+  track_width: 0.2205 # m
+  wheel_radius: 0.0475 # m
   deceleration_rate: 5
-  max_speed: 35.0
-  min_speed: -35.0
+  max_speed: 30.0
+  min_speed: -30.0
