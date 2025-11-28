@@ -5,7 +5,7 @@
 # or fall back to the destination set at configure time
 
 if test -z $_CATKIN_SETUP_DIR
-    set _CATKIN_SETUP_DIR /home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/install
+    set _CATKIN_SETUP_DIR /home/rmajetson/PB_2025_equipe1/robot_ws/install
 end
 
 set CATKIN_SETUP_UTIL_ARGS "--extend --local"

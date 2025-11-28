@@ -46,7 +46,7 @@ class RobotVision:
         # Inicialização dos parâmetros e subscritores/publicadores ROS
         self.vision_pub = rospy.Publisher('/vision', vision_pattern, queue_size=10)
 
-        self.queue_size = int(0.5 * NODE_RATE_HZ) # 5 amostras
+        self.queue_size = int(NODE_RATE_HZ) # 5 amostras
         self.vision_queue = deque(maxlen=self.queue_size)
 
         if(CAMERA_INDEX==-1):
@@ -123,6 +123,8 @@ class RobotVision:
                 avg_offset = np.mean([d['center_distance'] for d in self.vision_queue])
                 # Pega a média de todos os 'curvature_radius' na fila
                 avg_curvature = np.mean([d['curvature_radius'] for d in self.vision_queue])
+                # Pega a média de todos os 'closest_intersection_dist' na fila
+                avg_ci_dist = np.mean([d['ci_dist'] for d in self.vision_queue])
                 
                 # 2. Normalizar os Valores
                 self.avg_offset = avg_offset
@@ -131,7 +133,7 @@ class RobotVision:
                 vision_msg = vision_pattern()
                 vision_msg.offset = avg_offset
                 vision_msg.curvature = avg_curvature
-                vision_msg.ci_dist = 0.0
+                vision_msg.ci_dist = avg_ci_dist
                 self.vision_pub.publish(vision_msg)
             
             rate.sleep()
@@ -175,13 +177,6 @@ class RobotVision:
 
             if rospy.get_param('vision_params/camera/flip'):  frame = cv2.flip(frame, -1)  # Gira a imagem 180 graus se necessário
             self.process_frame(frame)
-            
-        
-
-            self.vision_queue.append({
-            'center_distance': self.vision_data['center_distance'],
-            'curvature_radius': self.vision_data['curvature_radius']
-            })
             
             sw_img , hg_img,bin_img = self.debug_camera(frame)
             if rospy.get_param('vision_params/node_config/debug_mode'):
@@ -244,6 +239,12 @@ class RobotVision:
         # Novos campos para controle Hough
         self.vision_data['norm_angle_hough'] = norm_angle
         self.vision_data['norm_offset_hough'] = norm_offset_hough
+
+        self.vision_queue.append({
+            'center_distance': self.vision_data['center_distance'],
+            'curvature_radius': self.vision_data['curvature_radius'],
+            'ci_dist': self.vision_data['closest_inter_dist']
+        })
 
     def binary_threshold(self, img):
         # Aplicar limiarização binária na imagem

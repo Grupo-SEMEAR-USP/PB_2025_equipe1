@@ -1,7 +1,7 @@
 vision_params:
   camera:
-    index: 0 # Se for = -1 Reconhece como Realsense
-    flip: false
+    index: -1 # Se for = -1 Reconhece como Realsense
+    flip: true
     #Parametros da Realsense
     rs:
       width: 640
@@ -18,4 +18,7 @@ vision_params:
     src_pc: [[0.20, 0.40], [0.80, 0.40], [1, 1], [0, 1.0]]
   node_config:
     rate: 20 #Frequency in Hz
-    debug_mode: true
+    debug_mode:
+      bin_img: false
+      hg_img: false
+      sw_img: false

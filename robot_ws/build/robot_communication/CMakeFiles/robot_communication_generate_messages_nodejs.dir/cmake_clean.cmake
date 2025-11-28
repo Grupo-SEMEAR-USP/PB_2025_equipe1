@@ -1,7 +1,7 @@
 file(REMOVE_RECURSE
-  "/home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/devel/.private/robot_communication/share/gennodejs/ros/robot_communication/msg/encoder_comm.js"
-  "/home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/devel/.private/robot_communication/share/gennodejs/ros/robot_communication/msg/velocity_comm.js"
-  "/home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/devel/.private/robot_communication/share/gennodejs/ros/robot_communication/msg/vision_pattern.js"
+  "/home/rmajetson/PB_2025_equipe1/robot_ws/devel/.private/robot_communication/share/gennodejs/ros/robot_communication/msg/encoder_comm.js"
+  "/home/rmajetson/PB_2025_equipe1/robot_ws/devel/.private/robot_communication/share/gennodejs/ros/robot_communication/msg/velocity_comm.js"
+  "/home/rmajetson/PB_2025_equipe1/robot_ws/devel/.private/robot_communication/share/gennodejs/ros/robot_communication/msg/vision_pattern.js"
   "CMakeFiles/robot_communication_generate_messages_nodejs"
 )
 

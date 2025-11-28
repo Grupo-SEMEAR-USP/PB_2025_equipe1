@@ -1,21 +1,21 @@
 Performing C SOURCE FILE Test CMAKE_HAVE_LIBC_PTHREAD failed with the following output:
-Change Dir: /home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/build/catkin_tools_prebuild/CMakeFiles/CMakeTmp
+Change Dir: /home/rmajetson/PB_2025_equipe1/robot_ws/build/catkin_tools_prebuild/CMakeFiles/CMakeTmp
 
-Run Build Command(s):/usr/bin/make cmTC_de7cf/fast && /usr/bin/make -f CMakeFiles/cmTC_de7cf.dir/build.make CMakeFiles/cmTC_de7cf.dir/build
-make[1]: Entering directory '/home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/build/catkin_tools_prebuild/CMakeFiles/CMakeTmp'
-Building C object CMakeFiles/cmTC_de7cf.dir/src.c.o
-/usr/bin/cc   -DCMAKE_HAVE_LIBC_PTHREAD   -o CMakeFiles/cmTC_de7cf.dir/src.c.o   -c /home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/build/catkin_tools_prebuild/CMakeFiles/CMakeTmp/src.c
-Linking C executable cmTC_de7cf
-/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_de7cf.dir/link.txt --verbose=1
-/usr/bin/cc  -DCMAKE_HAVE_LIBC_PTHREAD    CMakeFiles/cmTC_de7cf.dir/src.c.o  -o cmTC_de7cf 
-/usr/bin/ld: CMakeFiles/cmTC_de7cf.dir/src.c.o: in function `main':
-src.c:(.text+0x46): undefined reference to `pthread_create'
-/usr/bin/ld: src.c:(.text+0x52): undefined reference to `pthread_detach'
-/usr/bin/ld: src.c:(.text+0x63): undefined reference to `pthread_join'
+Run Build Command(s):/usr/bin/make cmTC_5eaac/fast && /usr/bin/make -f CMakeFiles/cmTC_5eaac.dir/build.make CMakeFiles/cmTC_5eaac.dir/build
+make[1]: Entering directory '/home/rmajetson/PB_2025_equipe1/robot_ws/build/catkin_tools_prebuild/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_5eaac.dir/src.c.o
+/usr/bin/cc   -DCMAKE_HAVE_LIBC_PTHREAD   -o CMakeFiles/cmTC_5eaac.dir/src.c.o   -c /home/rmajetson/PB_2025_equipe1/robot_ws/build/catkin_tools_prebuild/CMakeFiles/CMakeTmp/src.c
+Linking C executable cmTC_5eaac
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_5eaac.dir/link.txt --verbose=1
+/usr/bin/cc  -DCMAKE_HAVE_LIBC_PTHREAD    CMakeFiles/cmTC_5eaac.dir/src.c.o  -o cmTC_5eaac 
+/usr/bin/ld: CMakeFiles/cmTC_5eaac.dir/src.c.o: in function `main':
+src.c:(.text+0x48): undefined reference to `pthread_create'
+/usr/bin/ld: src.c:(.text+0x50): undefined reference to `pthread_detach'
+/usr/bin/ld: src.c:(.text+0x5c): undefined reference to `pthread_join'
 collect2: error: ld returned 1 exit status
-make[1]: *** [CMakeFiles/cmTC_de7cf.dir/build.make:87: cmTC_de7cf] Error 1
-make[1]: Leaving directory '/home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/build/catkin_tools_prebuild/CMakeFiles/CMakeTmp'
-make: *** [Makefile:121: cmTC_de7cf/fast] Error 2
+make[1]: *** [CMakeFiles/cmTC_5eaac.dir/build.make:87: cmTC_5eaac] Error 1
+make[1]: Leaving directory '/home/rmajetson/PB_2025_equipe1/robot_ws/build/catkin_tools_prebuild/CMakeFiles/CMakeTmp'
+make: *** [Makefile:121: cmTC_5eaac/fast] Error 2
 
 
 Source file was:
@@ -39,20 +39,20 @@ int main(void)
 }
 
 Determining if the function pthread_create exists in the pthreads failed with the following output:
-Change Dir: /home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/build/catkin_tools_prebuild/CMakeFiles/CMakeTmp
+Change Dir: /home/rmajetson/PB_2025_equipe1/robot_ws/build/catkin_tools_prebuild/CMakeFiles/CMakeTmp
 
-Run Build Command(s):/usr/bin/make cmTC_9ae8d/fast && /usr/bin/make -f CMakeFiles/cmTC_9ae8d.dir/build.make CMakeFiles/cmTC_9ae8d.dir/build
-make[1]: Entering directory '/home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/build/catkin_tools_prebuild/CMakeFiles/CMakeTmp'
-Building C object CMakeFiles/cmTC_9ae8d.dir/CheckFunctionExists.c.o
-/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=pthread_create   -o CMakeFiles/cmTC_9ae8d.dir/CheckFunctionExists.c.o   -c /usr/share/cmake-3.16/Modules/CheckFunctionExists.c
-Linking C executable cmTC_9ae8d
-/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_9ae8d.dir/link.txt --verbose=1
-/usr/bin/cc  -DCHECK_FUNCTION_EXISTS=pthread_create    CMakeFiles/cmTC_9ae8d.dir/CheckFunctionExists.c.o  -o cmTC_9ae8d  -lpthreads 
+Run Build Command(s):/usr/bin/make cmTC_d6dfa/fast && /usr/bin/make -f CMakeFiles/cmTC_d6dfa.dir/build.make CMakeFiles/cmTC_d6dfa.dir/build
+make[1]: Entering directory '/home/rmajetson/PB_2025_equipe1/robot_ws/build/catkin_tools_prebuild/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_d6dfa.dir/CheckFunctionExists.c.o
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=pthread_create   -o CMakeFiles/cmTC_d6dfa.dir/CheckFunctionExists.c.o   -c /usr/share/cmake-3.16/Modules/CheckFunctionExists.c
+Linking C executable cmTC_d6dfa
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_d6dfa.dir/link.txt --verbose=1
+/usr/bin/cc  -DCHECK_FUNCTION_EXISTS=pthread_create    CMakeFiles/cmTC_d6dfa.dir/CheckFunctionExists.c.o  -o cmTC_d6dfa  -lpthreads 
 /usr/bin/ld: cannot find -lpthreads
 collect2: error: ld returned 1 exit status
-make[1]: *** [CMakeFiles/cmTC_9ae8d.dir/build.make:87: cmTC_9ae8d] Error 1
-make[1]: Leaving directory '/home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/build/catkin_tools_prebuild/CMakeFiles/CMakeTmp'
-make: *** [Makefile:121: cmTC_9ae8d/fast] Error 2
+make[1]: *** [CMakeFiles/cmTC_d6dfa.dir/build.make:87: cmTC_d6dfa] Error 1
+make[1]: Leaving directory '/home/rmajetson/PB_2025_equipe1/robot_ws/build/catkin_tools_prebuild/CMakeFiles/CMakeTmp'
+make: *** [Makefile:121: cmTC_d6dfa/fast] Error 2
 
 
 

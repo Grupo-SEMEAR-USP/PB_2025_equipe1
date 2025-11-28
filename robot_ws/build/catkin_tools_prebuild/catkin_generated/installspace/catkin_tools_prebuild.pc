@@ -1,4 +1,4 @@
-prefix=/home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/install
+prefix=/home/rmajetson/PB_2025_equipe1/robot_ws/install
 
 Name: catkin_tools_prebuild
 Description: Description of catkin_tools_prebuild
