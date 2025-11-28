@@ -3,6 +3,10 @@
 #include "esp_err.h"
 #include "def.h"
 
+/* Limites do PCNT */
+#define PCNT_HIGH_LIMIT 10000
+#define PCNT_LOW_LIMIT  -10000
+
 /* Macros */
 #define ENCODER_A(SIDE) ((SIDE) == (ENC_LEFT) ? ENCODER_GPIO_LA : ENCODER_GPIO_RA)
 #define ENCODER_B(SIDE) ((SIDE) == (ENC_LEFT) ? ENCODER_GPIO_LB : ENCODER_GPIO_RB)
@@ -63,6 +67,14 @@ int get_encoder_vel(pcnt_unit_handle_t handler){
 
     ESP_ERROR_CHECK(pcnt_unit_get_count(handler, &count));
     pcnt_unit_clear_count(handler);
+    
+    return count;
+}
+
+int get_encoder_position(pcnt_unit_handle_t handler){
+    int count = 0; // Definindo variável temporária para armazenar a contagem
+
+    ESP_ERROR_CHECK(pcnt_unit_get_count(handler, &count));
     
     return count;
 }

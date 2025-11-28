@@ -15,17 +15,15 @@
 /* Parâmetros do controlador */
 // Motor Esquerdo
 #define KP_L 150.0f 
-#define KI_L 10.0f   
-#define KD_L 5.0f
-// #define TICKS_TO_RADS_LEFT (PI*2*(1000/CNTRL_PERIOD_MS))/1321 // Fator de conversão entre ticks do encoder para RPM
-#define TICKS_TO_RADS_LEFT 0.01570
+#define KI_L 0.0f   
+#define KD_L 0.0f
+#define TICKS_TO_RADS_LEFT (PI*2*(1000/CNTRL_PERIOD_MS))/1320 // Fator de conversão entre ticks do encoder para RPM
 
 // Motor Direito
 #define KP_R 150.0f    
-#define KI_R 10.0f     
-#define KD_R 5.0f 
-// #define TICKS_TO_RADS_RIGHT (PI*2*(1000/CNTRL_PERIOD_MS))/1321 // Fator de conversão entre ticks do encoder para RPM
-#define TICKS_TO_RADS_RIGHT 0.01570
+#define KI_R 0.0f     
+#define KD_R 0.0f 
+#define TICKS_TO_RADS_RIGHT (PI*2*(1000/CNTRL_PERIOD_MS))/1320 // Fator de conversão entre ticks do encoder para RPM
 
 /* Macros */
 #define PID_SIDE_KP(SIDE) ((SIDE) == PID_LEFT ? KP_L : KP_R)

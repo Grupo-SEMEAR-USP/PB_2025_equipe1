@@ -12,10 +12,6 @@
 #include "h_bridge.h"
 #include "pid.h"
 
-/* Configurações de Tempo (em ms) */
-#define PERIOD_COMM_MS    20  // 50 Hz
-#define PERIOD_CONTROL_MS 50  // 20 Hz
-
 /* Mutex para proteção de dados compartilhados */
 static SemaphoreHandle_t xDataMutex = NULL;
 
@@ -54,7 +50,7 @@ void uart_task(void *pvParameters) {
             }
         }
 
-        vTaskDelay(pdMS_TO_TICKS(PERIOD_COMM_MS));
+        vTaskDelay(pdMS_TO_TICKS(COMM_PERIOD_MS));
     }
 }
 
@@ -73,7 +69,7 @@ void actuators_task(void *pvParameters) {
 
     // Variável para manter o tempo de execução periódico
     TickType_t xLastWakeTime;
-    const TickType_t xFrequency = pdMS_TO_TICKS(PERIOD_CONTROL_MS);
+    const TickType_t xFrequency = pdMS_TO_TICKS(CNTRL_PERIOD_MS);
     xLastWakeTime = xTaskGetTickCount();
 
     // Inserção manual
