@@ -71,7 +71,7 @@
 // /* Encoder */
 // // Motor direito
 // #define ENCODER_GPIO_RA     GPIO_NUM_26
-// #define ENCODER_GPIO_RB     GPIO_NUM_27
+// #define ENCODER_GPIO_RB     GPIO_NUM_14
 
 // // Motor esquerdo
 // #define ENCODER_GPIO_LA     GPIO_NUM_32
