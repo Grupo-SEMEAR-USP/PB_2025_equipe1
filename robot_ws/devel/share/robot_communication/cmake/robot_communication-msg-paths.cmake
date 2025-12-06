@@ -1,1 +1,4 @@
-/home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/devel/.private/robot_communication/share/robot_communication/cmake/robot_communication-msg-paths.cmake
+# generated from genmsg/cmake/pkg-msg-paths.cmake.develspace.in
+
+set(robot_communication_MSG_INCLUDE_DIRS "/home/rmajetson/PB_2025_equipe1/robot_ws/src/robot_communication/msg")
+set(robot_communication_MSG_DEPENDENCIES std_msgs)

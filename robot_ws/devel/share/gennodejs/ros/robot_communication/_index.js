@@ -1,1 +1,6 @@
-/home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/devel/.private/robot_communication/share/gennodejs/ros/robot_communication/_index.js
+
+"use strict";
+
+module.exports = {
+  msg: require('./msg/_index.js'),
+};

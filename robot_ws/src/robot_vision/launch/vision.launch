@@ -1,4 +1,9 @@
 <launch>
   <rosparam file="$(find robot_vision)/config/vision_params.yaml" command="load" />
+
   <node name="vision" pkg="robot_vision" type="vision.py" output="screen"/>
+  <!-- <node name="new_vision" pkg="robot_vision" type="new_vision.py" output="screen"/> -->
+  <!-- <node name="vision_teste" pkg="robot_vision" type="vision_teste.py" output="screen"/> -->
+  <!-- <node name="vision_pb2" pkg="robot_vision" type="vision_pb2.py" output="screen"/> -->
+
 </launch>

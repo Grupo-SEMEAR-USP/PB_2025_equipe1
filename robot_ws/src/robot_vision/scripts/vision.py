@@ -1,12 +1,12 @@
 import rospy
-import pyrealsense2 as rs
+# import pyrealsense2 as rs
 import cv2
 import numpy as np
 import threading
 from collections import deque
-
+from cv_bridge import CvBridge, CvBridgeError # Importante!
+from sensor_msgs.msg import Image, Imu
 from robot_communication.msg import vision_pattern
-
 
 
 # --- Carregando Parâmetros de Configuração --- #
@@ -42,20 +42,86 @@ except Exception as e:
 
 
 class RobotVision:
+    # def __init__(self):
+    #     # Inicialização dos parâmetros e subscritores/publicadores ROS
+    #     self.vision_pub = rospy.Publisher('/vision', vision_pattern, queue_size=10)
+
+    #     self.queue_size = int(NODE_RATE_HZ) # 5 amostras
+    #     self.vision_queue = deque(maxlen=self.queue_size)
+
+    #     if(CAMERA_INDEX==-1):
+    #         self.realsense_init()
+    #         self.height, self.width = [RS_HEIGHT,RS_WIDTH]
+    #     else:
+    #         self.cam = cv2.VideoCapture(CAMERA_INDEX, cv2.CAP_V4L2) # Garante backend V4L2
+    #         self.height, self.width = self.cam.read()[1].shape[:2]
+        
+    #     self.Minv = None
+    #     self.binary_warped_img = None
+    #     self.warped_img = None
+    #     self.cam_img = None
+    #     self.left_fit = None 
+    #     self.right_fit = None 
+    #     self.avg_offset = 0.0
+    #     self.avg_curvature = 0.0
+    #     #definindo dados de visão
+    #     self.vision_data = {
+    #         'center_distance': 0.0,
+    #         'curvature_radius': 0.0,
+    #         'area_left': 0.0,
+    #         'area_right': 0.0,
+    #         'closest_intersection': (0,0),
+    #         'closest_inter_dist': 0.0,
+    #         'min_angle': 0.0,
+    #         'min_angle_line': None,
+    #         'lines': None,
+    #         'norm_angle_hough': 0.0,
+    #         'norm_offset_hough': 0.0
+    #     }
+
+    #     if CAMERA_INDEX == -1:
+    #         rospy.Subscriber("/camera/aligned_depth_to_color/image_raw", Image, self.depth_callback)
+    #         rospy.Subscriber("/camera/color/image_raw", Image, self.image_callback)
+    #     else:
+    #         # Mantém suporte a webcam normal se necessário
+    #         self.cam = cv2.VideoCapture(CAMERA_INDEX, cv2.CAP_V4L2)
+    #         self.cam_thread = threading.Thread(target=self.camera_loop, daemon=True)
+    #         self.cam_thread.start()
+
+    #     self.pub_thread = threading.Thread(target=self.publishing_loop, daemon=True)
+    #     self.pub_thread.start()
+
+    #     # self.cam_thread = threading.Thread(target=self.camera_loop, daemon=True)
+    #     # self.cam_thread.start()
+    #     # self.pub_thread = threading.Thread(target=self.publishing_loop, daemon=True)
+    #     # self.pub_thread.start()
     def __init__(self):
+        # --- 1. Inicializa o CvBridge (ESSENCIAL) ---
+        self.bridge = CvBridge()
+        
+        # --- 2. Variável para guardar a profundidade ---
+        self.latest_depth = None 
+
         # Inicialização dos parâmetros e subscritores/publicadores ROS
         self.vision_pub = rospy.Publisher('/vision', vision_pattern, queue_size=10)
 
-        self.queue_size = int(NODE_RATE_HZ) # 5 amostras
+        self.queue_size = int(NODE_RATE_HZ)
         self.vision_queue = deque(maxlen=self.queue_size)
 
-        if(CAMERA_INDEX==-1):
-            self.realsense_init()
-            self.height, self.width = [RS_HEIGHT,RS_WIDTH]
+        # Configura dimensões baseadas nos parâmetros ou na câmera
+        if CAMERA_INDEX == -1:
+            # Se for RealSense via ROS, confiamos nos parâmetros
+            self.height, self.width = [RS_HEIGHT, RS_WIDTH]
         else:
-            self.cam = cv2.VideoCapture(CAMERA_INDEX, cv2.CAP_V4L2) # Garante backend V4L2
-            self.height, self.width = self.cam.read()[1].shape[:2]
-        
+            self.cam = cv2.VideoCapture(CAMERA_INDEX, cv2.CAP_V4L2)
+            # Lê um frame para pegar o tamanho real
+            ret, tmp_frame = self.cam.read()
+            if ret:
+                self.height, self.width = tmp_frame.shape[:2]
+            else:
+                self.height, self.width = [480, 640] # Fallback
+
+        # Inicializa variáveis de visão
         self.Minv = None
         self.binary_warped_img = None
         self.warped_img = None
@@ -64,7 +130,7 @@ class RobotVision:
         self.right_fit = None 
         self.avg_offset = 0.0
         self.avg_curvature = 0.0
-        #definindo dados de visão
+        
         self.vision_data = {
             'center_distance': 0.0,
             'curvature_radius': 0.0,
@@ -79,37 +145,122 @@ class RobotVision:
             'norm_offset_hough': 0.0
         }
 
+        # --- 3. Lógica de Conexão Limpa ---
+        if CAMERA_INDEX == -1:
+            rospy.loginfo("Iniciando Modo ROS (RealSense Driver Externo)")
+            # Assina os tópicos que o rs_camera.launch publica
+            rospy.Subscriber("/camera/aligned_depth_to_color/image_raw", Image, self.depth_callback)
+            rospy.Subscriber("/camera/color/image_raw", Image, self.image_callback)
+        else:
+            rospy.loginfo(f"Iniciando Modo Webcam (Index {CAMERA_INDEX})")
+            self.cam_thread = threading.Thread(target=self.camera_loop, daemon=True)
+            self.cam_thread.start()
 
-        self.cam_thread = threading.Thread(target=self.camera_loop, daemon=True)
-        self.cam_thread.start()
         self.pub_thread = threading.Thread(target=self.publishing_loop, daemon=True)
         self.pub_thread.start()
 
-    def realsense_init(self):
-        # Configure depth and color streams
-        self.rs_pipeline = rs.pipeline()
-        self.rs_config = rs.config()
+    def depth_callback(self, msg):
+        try:
+            # Salva a imagem de profundidade para usar quando a cor chegar
+            self.latest_depth = self.bridge.imgmsg_to_cv2(msg, desired_encoding="passthrough")
+        except CvBridgeError as e:
+            rospy.logerr(e)
 
-        # Get device product line for setting a supporting resolution
-        self.rs_pipeline_wrapper = rs.pipeline_wrapper(self.rs_pipeline)
-        self.rs_pipeline_profile = self.rs_config.resolve(self.rs_pipeline_wrapper)
-        self.rs_device = self.rs_pipeline_profile.get_device()
-        self.rs_device_product_line = str(self.rs_device.get_info(rs.camera_info.product_line))
+    # def image_callback(self, msg):
+    #     try:
+    #         color_frame = self.bridge.imgmsg_to_cv2(msg, "bgr8")
+            
+    #         # Garante que temos profundidade antes de processar
+    #         if self.latest_depth is None:
+    #             return
 
-        found_rgb = False
-        for s in self.rs_device.sensors:
-            if s.get_info(rs.camera_info.name) == 'RGB Camera':
-                found_rgb = True
-                break
-        if not found_rgb:
-            print("The demo requires Depth camera with Color sensor")
-            exit(0)
+    #         # Simula a estrutura que seu código espera: frames = [color, depth]
+    #         frames = [color_frame, self.latest_depth]
 
-        self.rs_config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
-        self.rs_config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
+    #         # Aplica o Flip se configurado
+    #         if rospy.get_param('vision_params/camera/flip', False):
+    #             frames[0] = cv2.flip(frames[0], -1)
+    #             frames[1] = cv2.flip(frames[1], -1)
 
-        # Start streaming
-        self.rs_pipeline.start(self.rs_config)
+    #         # Chama seu processamento ORIGINAL
+    #         self.process_frame(frames)
+
+    #         # --- VISUALIZAÇÃO DEBUG (Movido do camera_loop para cá) ---
+    #         debug = rospy.get_param('vision_params/node_config/debug_mode')
+    #         if debug['sw_img'] or debug['hg_img'] or debug['bin_img']:
+    #             sw_img, hg_img, bin_img = self.debug_camera(frames[0]) # Passa o frame colorido atual
+                
+    #             if debug['sw_img']: cv2.imshow("Sliding Windowns Detect", sw_img)
+    #             if debug['hg_img']: cv2.imshow("Hough Detect", hg_img)
+    #             if debug['bin_img']: cv2.imshow("Binary Image", bin_img)
+    #             cv2.waitKey(1)
+
+    #     except CvBridgeError as e:
+    #         rospy.logerr(e)
+
+    def image_callback(self, msg):
+        try:
+            color_frame = self.bridge.imgmsg_to_cv2(msg, "bgr8")
+            
+            # Cria um frame de profundidade "fake" (preto) se não tiver chegado nada ainda
+            # Isso impede que o nó pare de publicar
+            if self.latest_depth is None:
+                # Cria uma matriz de zeros do mesmo tamanho da imagem colorida
+                depth_frame = np.zeros((color_frame.shape[0], color_frame.shape[1]), dtype=np.uint16)
+            else:
+                depth_frame = self.latest_depth
+
+            # Aplica o Flip se configurado
+            if rospy.get_param('vision_params/camera/flip', False):
+                color_frame = cv2.flip(color_frame, -1)
+                depth_frame = cv2.flip(depth_frame, -1)
+
+            frames = [color_frame, depth_frame]
+
+            # Chama o processamento
+            self.process_frame(frames)
+
+            # Debug
+            debug = rospy.get_param('vision_params/node_config/debug_mode')
+            if debug['sw_img'] or debug['hg_img'] or debug['bin_img']:
+                sw_img, hg_img, bin_img = self.debug_camera(frames[0])
+                if debug['sw_img']: cv2.imshow("Sliding Windowns Detect", sw_img)
+                if debug['hg_img']: cv2.imshow("Hough Detect", hg_img)
+                if debug['bin_img']: cv2.imshow("Binary Image", bin_img)
+                cv2.waitKey(1)
+
+        except CvBridgeError as e:
+            rospy.logerr(e)
+
+    # def realsense_init(self):
+    #     # Configure depth and color streams
+    #     self.rs_pipeline = rs.pipeline()
+    #     self.rs_config = rs.config()
+
+    #     # Get device product line for setting a supporting resolution
+    #     self.rs_pipeline_wrapper = rs.pipeline_wrapper(self.rs_pipeline)
+    #     self.rs_pipeline_profile = self.rs_config.resolve(self.rs_pipeline_wrapper)
+    #     self.rs_device = self.rs_pipeline_profile.get_device()
+    #     self.rs_device_product_line = str(self.rs_device.get_info(rs.camera_info.product_line))
+
+    #     found_rgb = False
+    #     for s in self.rs_device.sensors:
+    #         if s.get_info(rs.camera_info.name) == 'RGB Camera':
+    #             found_rgb = True
+    #             break
+    #     if not found_rgb:
+    #         print("The demo requires Depth camera with Color sensor")
+    #         exit(0)
+
+    #     self.rs_config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
+    #     self.rs_config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
+
+    #     # Habilita Giroscópio e Acelerômetro
+    #     self.rs_config.enable_stream(rs.stream.accel, rs.format.motion_xyz32f)
+    #     self.rs_config.enable_stream(rs.stream.gyro, rs.format.motion_xyz32f)
+
+    #     # Start streaming
+    #     self.rs_pipeline.start(self.rs_config)
         
     def publishing_loop(self):
         # Define a taxa de publicação
@@ -138,128 +289,248 @@ class RobotVision:
             
             rate.sleep()
 
+    # def camera_loop(self):  
+    #     if(CAMERA_INDEX!=-1):
+    #         if not self.cam.isOpened():
+    #             rospy.logwarn("Erro fatal: Não foi possível abrir nenhuma câmera. Verifique as conexões.")
+    #             return
+
+    #         # Logo após abrir a câmera e antes do loop principal do ROS:
+    #         for i in range(20):
+    #             ret, frame = self.cam.read()
+
+    #     seq = 0
+    #     while not rospy.is_shutdown():
+
+    #         if CAMERA_INDEX!=-1:
+    #             ret, frame = self.cam.read()
+
+    #             if not ret:
+    #                 rospy.logwarn("Erro: Não foi possível ler o frame da câmera.")
+    #                 break
+    #             if rospy.get_param('vision_params/camera/flip'):  frame = cv2.flip(frame, -1)  # Gira a imagem 180 graus se necessário
+    #             #processa  o frame depois dela ter sido flipadda(ou não, depende da configuração)
+    #             self.process_frame(frame)
+    #         else:
+    #             # Wait for a coherent pair of frames: depth and color
+    #             rs_frames = self.rs_pipeline.wait_for_frames()
+    #             depth_frame = rs_frames.get_depth_frame()
+    #             color_frame = rs_frames.get_color_frame()
+    #             if not depth_frame or not color_frame:
+    #                 continue
+    #             if depth_frame and color_frame:
+    #                 # Convert images to numpy arrays
+    #                 depth_image = np.asanyarray(depth_frame.get_data())
+    #                 color_image = np.asanyarray(color_frame.get_data())
+
+    #                 # Apply colormap on depth image (image must be converted to 8-bit per pixel first)
+    #                 depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
+
+    #                 frames = [color_image,depth_image]
+    #                 if rospy.get_param('vision_params/camera/flip'):  frames[0] = cv2.flip(frames[0], -1)  # Gira a imagem 180 graus se necessário
+    #                 frame = frames[0]
+    #                 #processa  o frame depois dela ter sido flipadda(ou não, depende da configuração)
+    #                 self.process_frame(frames)
+
+    #                 debug = rospy.get_param('vision_params/node_config/debug_mode')
+                    
+    #                 if debug['sw_img'] or debug['hg_img'] or debug['bin_img']:
+    #                     sw_img , hg_img,bin_img = self.debug_camera(frame)
+                        
+    #                     # cv2.imshow("Prof",cv2.flip(depth_image,-1))
+    #                     # cv2.imshow("Prof Color Map",cv2.flip(depth_colormap,-1))
+
+    #                     if debug['sw_img']: cv2.imshow("Sliding Windowns Detect", sw_img)
+    #                     if debug['hg_img']: cv2.imshow("Hough Detect", hg_img)
+    #                     if debug['bin_img']: cv2.imshow("Binary Image", bin_img)
+    #                 cv2.waitKey(1)
+
+    #                 # Processamento da IMU
+    #                 accel_frame = rs_frames.first_or_default(rs.stream.accel)
+    #                 gyro_frame = rs_frames.first_or_default(rs.stream.gyro)
+
+    #                 if accel_frame and gyro_frame:
+    #                     accel_data = accel_frame.as_motion_frame().get_motion_data()
+    #                     gyro_data = gyro_frame.as_motion_frame().get_motion_data()
+                        
+    #                     self.publish_imu(accel_data, gyro_data, seq)
+    #                     seq += 1
+
     def camera_loop(self):  
-        if(CAMERA_INDEX!=-1):
-            if not self.cam.isOpened():
-                rospy.logwarn("Erro fatal: Não foi possível abrir nenhuma câmera. Verifique as conexões.")
-                return
-
-            # Logo após abrir a câmera e antes do loop principal do ROS:
-            for i in range(20):
-                ret, frame = self.cam.read()
-
+        if CAMERA_INDEX == -1: return # Se for RealSense, o loop não roda (usamos callbacks)
+        
         while not rospy.is_shutdown():
-
-            if CAMERA_INDEX!=-1:
-                ret, frame = self.cam.read()
-
-                if not ret:
-                    rospy.logwarn("Erro: Não foi possível ler o frame da câmera.")
-                    break
-                if rospy.get_param('vision_params/camera/flip'):  frame = cv2.flip(frame, -1)  # Gira a imagem 180 graus se necessário
-                #processa  o frame depois dela ter sido flipadda(ou não, depende da configuração)
-                self.process_frame(frame)
-            else:
-                # Wait for a coherent pair of frames: depth and color
-                rs_frames = self.rs_pipeline.wait_for_frames()
-                depth_frame = rs_frames.get_depth_frame()
-                color_frame = rs_frames.get_color_frame()
-                if not depth_frame or not color_frame:
-                    continue
-
-                # Convert images to numpy arrays
-                depth_image = np.asanyarray(depth_frame.get_data())
-                color_image = np.asanyarray(color_frame.get_data())
-
-                # Apply colormap on depth image (image must be converted to 8-bit per pixel first)
-                depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
-
-                frames = [color_image,depth_image]
-                if rospy.get_param('vision_params/camera/flip'):  frames[0] = cv2.flip(frames[0], -1)  # Gira a imagem 180 graus se necessário
-                frame = frames[0]
-                #processa  o frame depois dela ter sido flipadda(ou não, depende da configuração)
-                self.process_frame(frames)
-
-
-
-                
-            debug = rospy.get_param('vision_params/node_config/debug_mode')
+            ret, frame = self.cam.read()
+            if not ret: break
+            if rospy.get_param('vision_params/camera/flip'): frame = cv2.flip(frame, -1)
             
-            if debug['sw_img'] or debug['hg_img'] or debug['bin_img']:
-                sw_img , hg_img,bin_img = self.debug_camera(frame)
-                
-                # cv2.imshow("Prof",cv2.flip(depth_image,-1))
-                # cv2.imshow("Prof Color Map",cv2.flip(depth_colormap,-1))
-
-                if debug['sw_img']: cv2.imshow("Sliding Windowns Detect", sw_img)
-                if debug['hg_img']: cv2.imshow("Hough Detect", hg_img)
-                if debug['bin_img']: cv2.imshow("Binary Image", bin_img)
+            self.process_frame(frame)
+            # (Debug da webcam omitido para brevidade, mas igual ao acima)
             cv2.waitKey(1)
 
+    # def process_frame(self, g_frame):
+    #     if CAMERA_INDEX != -1:
+    #         frame = g_frame
+    #     else:
+    #         frame = g_frame[0]
+
+    #     # Processamento do frame para detecção de faixas
+    #     img_warped = self.perspective_transform(frame)
+    #     binary_warped = self.binary_threshold(img_warped)
+
+    #     self.binary_warped_img = binary_warped
+
+    #     #Aplicando Algoritimos para detecção da faixa
+    #     left_fit_normalized, right_fit_normalized , y_mean = self.sliding_window_search(binary_warped)
+    #     hg_img = self.binary_threshold(frame.copy())
+    #     cinter_dist ,lines, min_angle_line, closest_inter, min_angle, area_left, area_right, norm_angle, norm_offset_hough = self.hough_line_detection(hg_img)
+
+
+    #     # --- DESNORMALIZAÇÃO ---
+    #     A_prime_L, B_prime_L, C_prime_L = left_fit_normalized
+    #     A_prime_R, B_prime_R, C_prime_R = right_fit_normalized
+
+    #     # Coeficientes para a faixa ESQUERDA (left_fit)
+    #     A_L = A_prime_L
+    #     B_L = B_prime_L - 2 * A_prime_L * y_mean
+    #     C_L = C_prime_L - B_prime_L * y_mean + A_prime_L * (y_mean**2)
+        
+    #     # Coeficientes para a faixa DIREITA (right_fit)
+    #     A_R = A_prime_R
+    #     B_R = B_prime_R - 2 * A_prime_R * y_mean
+    #     C_R = C_prime_R - B_prime_R * y_mean + A_prime_R * (y_mean**2)
+        
+    #     # --- ARMAZENANDO OS COEFICIENTES ORIGINAIS ---
+    #     self.left_fit = np.array([A_L, B_L, C_L])
+    #     self.right_fit = np.array([A_R, B_R, C_R]) 
+    #     # ----------------------------------------------
+
+    #     # --- ATUALIZAÇÃO DO DICIONÁRIO vision_data ---
+    #     # Valores diretos retornados pela função atualizada
+        
+    #     curvature_radius = self.calculate_curvature(self.left_fit, self.right_fit, binary_warped.shape[0])
+    #     center_distance = self.calculate_center_distance(self.left_fit, self.right_fit, binary_warped.shape[1])
+    #     self.vision_data['center_distance'] = center_distance
+    #     self.vision_data['curvature_radius'] = curvature_radius
+
+    #     # Dados do Hough
+    #     self.vision_data['area_left'] = area_left
+    #     self.vision_data['area_right'] = area_right
+    #     self.vision_data['closest_intersection'] = closest_inter
+        
+    #     if CAMERA_INDEX== -1:depth_f = g_frame[1]
+    #     if cinter_dist != None and closest_inter != None:
+    #         self.vision_data['closest_inter_dist'] = cinter_dist
+    #         if CAMERA_INDEX == -1 and g_frame != None:   
+    #             cx , cy = closest_inter
+    #             self.vision_data['closest_inter_dist'] = depth_f[cx][cy]/1000
+    #     else:
+    #          self.vision_data['closest_inter_dist'] = self.height
+    #          if CAMERA_INDEX == -1: self.vision_data['closest_inter_dist'] = depth_f[340][0]
+    #     self.vision_data['min_angle'] = min_angle
+    #     self.vision_data['min_angle_line'] = min_angle_line
+    #     self.vision_data['lines'] = lines
+        
+    #     # Novos campos para controle Hough
+    #     self.vision_data['norm_angle_hough'] = norm_angle
+    #     self.vision_data['norm_offset_hough'] = norm_offset_hough
+
+    #     self.vision_queue.append({
+    #         'center_distance': self.vision_data['center_distance'],
+    #         'curvature_radius': self.vision_data['curvature_radius'],
+    #         'ci_dist': self.vision_data['closest_inter_dist']
+    #     })
+
     def process_frame(self, g_frame):
+        # 1. Separação dos Frames
         if CAMERA_INDEX != -1:
             frame = g_frame
         else:
-            frame = g_frame[0]
+            frame = g_frame[0] # Frame colorido
 
-        # Processamento do frame para detecção de faixas
+        # 2. Processamento de Visão (Warp + Threshold)
         img_warped = self.perspective_transform(frame)
         binary_warped = self.binary_threshold(img_warped)
-
         self.binary_warped_img = binary_warped
 
-        #Aplicando Algoritimos para detecção da faixa
-        left_fit_normalized, right_fit_normalized , y_mean = self.sliding_window_search(binary_warped)
+        # 3. Detecção de Faixas (Sliding Window)
+        left_fit_normalized, right_fit_normalized, y_mean = self.sliding_window_search(binary_warped)
+        
+        # 4. Detecção de Linhas (Hough)
         hg_img = self.binary_threshold(frame.copy())
-        cinter_dist ,lines, min_angle_line, closest_inter, min_angle, area_left, area_right, norm_angle, norm_offset_hough = self.hough_line_detection(hg_img)
+        cinter_dist, lines, min_angle_line, closest_inter, min_angle, area_left, area_right, norm_angle, norm_offset_hough = self.hough_line_detection(hg_img)
 
-
-    # --- DESNORMALIZAÇÃO ---
+        # 5. Desnormalização dos Polinômios
         A_prime_L, B_prime_L, C_prime_L = left_fit_normalized
         A_prime_R, B_prime_R, C_prime_R = right_fit_normalized
 
-        # Coeficientes para a faixa ESQUERDA (left_fit)
+        # Coeficientes Faixa Esquerda
         A_L = A_prime_L
         B_L = B_prime_L - 2 * A_prime_L * y_mean
         C_L = C_prime_L - B_prime_L * y_mean + A_prime_L * (y_mean**2)
         
-        # Coeficientes para a faixa DIREITA (right_fit)
+        # Coeficientes Faixa Direita
         A_R = A_prime_R
         B_R = B_prime_R - 2 * A_prime_R * y_mean
         C_R = C_prime_R - B_prime_R * y_mean + A_prime_R * (y_mean**2)
         
-        # --- ARMAZENANDO OS COEFICIENTES ORIGINAIS ---
         self.left_fit = np.array([A_L, B_L, C_L])
         self.right_fit = np.array([A_R, B_R, C_R]) 
-        # ----------------------------------------------
 
-        # --- ATUALIZAÇÃO DO DICIONÁRIO vision_data ---
-        # Valores diretos retornados pela função atualizada
-        
+        # 6. Cálculo de Métricas (Curvatura e Centro)
         curvature_radius = self.calculate_curvature(self.left_fit, self.right_fit, binary_warped.shape[0])
         center_distance = self.calculate_center_distance(self.left_fit, self.right_fit, binary_warped.shape[1])
+        
         self.vision_data['center_distance'] = center_distance
         self.vision_data['curvature_radius'] = curvature_radius
-
-        # Dados do Hough
         self.vision_data['area_left'] = area_left
         self.vision_data['area_right'] = area_right
         self.vision_data['closest_intersection'] = closest_inter
         
-        if CAMERA_INDEX== -1:depth_f = g_frame[1]
-        if cinter_dist != None and closest_inter != None:
+        # 7. Lógica de Profundidade (CORRIGIDA E ROBUSTA)
+        if CAMERA_INDEX == -1: 
+            depth_f = g_frame[1] # Frame de profundidade
+        
+        # Caso A: Existe uma interseção detectada pelo Hough
+        if cinter_dist is not None and closest_inter is not None:
             self.vision_data['closest_inter_dist'] = cinter_dist
-            if CAMERA_INDEX == -1 and g_frame != None:   
-                cx , cy = closest_inter
-                self.vision_data['closest_inter_dist'] = depth_f[cx][cy]/1000
+            
+            if CAMERA_INDEX == -1 and depth_f is not None:   
+                cx, cy = closest_inter
+                try:
+                    # CORREÇÃO CRÍTICA:
+                    # 1. Numpy usa [linha, coluna] -> [y, x]
+                    # 2. Verificação de limites da matriz para não dar Crash
+                    if 0 <= cy < depth_f.shape[0] and 0 <= cx < depth_f.shape[1]:
+                        val_mm = depth_f[cy, cx]
+                        # 3. Filtro de Zeros (RealSense retorna 0 quando não sabe a distancia)
+                        if val_mm > 0:
+                            self.vision_data['closest_inter_dist'] = val_mm / 1000.0
+                except Exception as e:
+                    rospy.logwarn_throttle(5, f"Erro ao ler profundidade no ponto: {e}")
+
+        # Caso B: Nenhuma interseção (Olhar para frente/padrão)
         else:
-             self.vision_data['closest_inter_dist'] = self.height
-             if CAMERA_INDEX == -1: self.vision_data['closest_inter_dist'] = depth_f[340][0]
+             self.vision_data['closest_inter_dist'] = 3.0 # Valor seguro padrão (3 metros)
+             
+             if CAMERA_INDEX == -1 and depth_f is not None:
+                 try:
+                    # Define um ponto fixo para olhar (ex: centro inferior da imagem)
+                    # Ajustado para 640x480 (aprox linha 340, coluna 320)
+                    target_y = int(depth_f.shape[0] * 0.7)
+                    target_x = int(depth_f.shape[1] * 0.5)
+                    
+                    if 0 <= target_y < depth_f.shape[0] and 0 <= target_x < depth_f.shape[1]:
+                        val_mm = depth_f[target_y, target_x]
+                        if val_mm > 0:
+                            self.vision_data['closest_inter_dist'] = val_mm / 1000.0
+                 except Exception: 
+                     pass
+
+        # 8. Atualização Final dos Dados
         self.vision_data['min_angle'] = min_angle
         self.vision_data['min_angle_line'] = min_angle_line
         self.vision_data['lines'] = lines
-        
-        # Novos campos para controle Hough
         self.vision_data['norm_angle_hough'] = norm_angle
         self.vision_data['norm_offset_hough'] = norm_offset_hough
 

@@ -1,1 +1,6 @@
-/home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/devel/.private/robot_communication/share/common-lisp/ros/robot_communication/msg/_package_velocity_comm.lisp
+(cl:in-package robot_communication-msg)
+(cl:export '(LEFT_VEL-VAL
+          LEFT_VEL
+          RIGHT_VEL-VAL
+          RIGHT_VEL
+))

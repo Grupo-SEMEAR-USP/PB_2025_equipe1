@@ -1,1 +1,8 @@
-/home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/devel/.private/robot_general/lib/pkgconfig/robot_general.pc
+prefix=/home/rmajetson/PB_2025_equipe1/robot_ws/devel/.private/robot_general
+
+Name: robot_general
+Description: Description of robot_general
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

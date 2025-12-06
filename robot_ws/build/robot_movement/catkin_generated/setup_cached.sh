@@ -7,7 +7,6 @@
 # new environment variables
 
 # modified environment variables
-export CMAKE_PREFIX_PATH="/home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/devel/.private/robot_movement:$CMAKE_PREFIX_PATH"
-export PWD='/home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/build/robot_movement'
-export ROSLISP_PACKAGE_DIRECTORIES="/home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/devel/.private/robot_movement/share/common-lisp:$ROSLISP_PACKAGE_DIRECTORIES"
-export ROS_PACKAGE_PATH="/home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/src/robot_movement:$ROS_PACKAGE_PATH"
+export CMAKE_PREFIX_PATH="/home/rmajetson/PB_2025_equipe1/robot_ws/devel/.private/robot_movement:$CMAKE_PREFIX_PATH"
+export PWD='/home/rmajetson/PB_2025_equipe1/robot_ws/build/robot_movement'
+export ROS_PACKAGE_PATH="/home/rmajetson/PB_2025_equipe1/robot_ws/src/robot_movement:$ROS_PACKAGE_PATH"

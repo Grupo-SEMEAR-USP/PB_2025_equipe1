@@ -1,1 +1,12 @@
-/home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/devel/.private/robot_communication/share/gennodejs/ros/robot_communication/msg/_index.js
+
+"use strict";
+
+let vision_pattern = require('./vision_pattern.js');
+let velocity_comm = require('./velocity_comm.js');
+let encoder_comm = require('./encoder_comm.js');
+
+module.exports = {
+  vision_pattern: vision_pattern,
+  velocity_comm: velocity_comm,
+  encoder_comm: encoder_comm,
+};

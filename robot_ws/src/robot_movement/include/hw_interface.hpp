@@ -23,6 +23,7 @@
 #include <geometry_msgs/Point.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <nav_msgs/Odometry.h>
+#include <sensor_msgs/Imu.h>
 // Mensagens criadas para comunicação
 #include "robot_communication/velocity_comm.h"
 #include "robot_communication/encoder_comm.h"
@@ -34,6 +35,7 @@ public:
     // Funções de callback
     void cb_cmdVel(const geometry_msgs::Twist::ConstPtr& msg); 
     void cb_encoder(const robot_communication::encoder_comm::ConstPtr& msg);
+    void cb_imu(const sensor_msgs::Imu::ConstPtr& msg);
     void cb_cmdTimeout(const ros::TimerEvent&); // Callback para timeout sem cmd_vel
     // Funções de publicação
     void publishWheelSpeeds();
@@ -48,6 +50,7 @@ private:
     ros::Publisher velocity_command_pub_;
     ros::Subscriber cmd_vel_sub_;
     ros::Subscriber encoder_sub_;
+    ros::Subscriber imu_sub_;
     ros::Publisher odom_pub_;
     ros::Timer command_timeout_; // Timer de segurança
     tf::TransformBroadcaster odom_broadcaster_;
@@ -72,6 +75,12 @@ private:
     /*——— Estado Atual ———*/
     double current_linear_vel_x_ = 0.0;  // [m/s]
     double current_angular_vel_z_ = 0.0; // [rad/s]
+
+    /*——— Dados IMU ———*/
+    double imu_yaw_ = 0.0;          
+    double imu_angular_vel_z_ = 0.0;
+    double imu_initial_offset_ = 0.0;
+    bool imu_initialized_ = false;  // Flag de segurança
 
     /*——— Controle de Tempo ———*/
     ros::Time current_time_;

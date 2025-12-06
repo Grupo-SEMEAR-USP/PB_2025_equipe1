@@ -1,1 +1,8 @@
-/home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/devel/.private/robot_communication/share/common-lisp/ros/robot_communication/msg/_package_vision_pattern.lisp
+(cl:in-package robot_communication-msg)
+(cl:export '(CURVATURE-VAL
+          CURVATURE
+          OFFSET-VAL
+          OFFSET
+          CI_DIST-VAL
+          CI_DIST
+))

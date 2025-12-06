@@ -9,6 +9,7 @@ HwInterface::HwInterface(ros::NodeHandle& nh)
     /*——— Publishers e Subscribers ———*/
     cmd_vel_sub_ = nh_.subscribe("cmd_vel", 10, &HwInterface::cb_cmdVel, this);
     encoder_sub_ = nh_.subscribe("encoder_data", 10, &HwInterface::cb_encoder, this);
+    imu_sub_ = nh_.subscribe("/imu/data_fused", 10, &HwInterface::cb_imu, this);
     
     velocity_command_pub_ = nh_.advertise<robot_communication::velocity_comm>("velocity_cmd", 10);
     odom_pub_ = nh_.advertise<nav_msgs::Odometry>("odom", 50);
@@ -35,6 +36,40 @@ HwInterface::HwInterface(ros::NodeHandle& nh)
 }
 
 /* ——————————————————— Callbacks ———————————————————————— */
+
+// Callback da IMU
+void HwInterface::cb_imu(const sensor_msgs::Imu::ConstPtr& msg)
+{
+    // Extrai Orientação
+    tf::Quaternion q(
+        msg->orientation.x,
+        msg->orientation.y,
+        msg->orientation.z,
+        msg->orientation.w
+    );
+    tf::Matrix3x3 m(q);
+    double roll, pitch, yaw;
+    m.getRPY(roll, pitch, yaw);
+
+    // Zera a orientação no início
+    if (!imu_initialized_) {
+        imu_initial_offset_ = yaw;
+        imu_initialized_ = true;
+        ROS_INFO("IMU Inicializada. Offset de Yaw: %.2f rad", imu_initial_offset_);
+    }
+
+    // Calcula o yaw relativo ao offset inicial
+    double relative_yaw = yaw - imu_initial_offset_;
+
+    // Normaliza para garantir -PI a PI
+    while (relative_yaw > M_PI) relative_yaw -= 2.0 * M_PI;
+    while (relative_yaw < -M_PI) relative_yaw += 2.0 * M_PI;
+
+    imu_yaw_ = relative_yaw;
+
+    // Extrai a velocidade angular
+    imu_angular_vel_z_ = msg->angular_velocity.z;
+}
 
 void HwInterface::cb_cmdVel(const geometry_msgs::Twist::ConstPtr& msg)
 {
@@ -124,19 +159,33 @@ void HwInterface::updateOdometry()
     // Calcula o tempo real desde a última atualização
     double dt = (current_time_ - last_time_).toSec();
     if (dt <= 0.0) {
-        ROS_WARN_THROTTLE(1.0, "Delta time (dt) é zero ou negativo, pulando odometria.");
-        return; // Evita divisão por zero ou cálculos inválidos
+        if (last_time_.toSec() == 0) last_time_ = current_time_;
+        return; 
     }
 
     /*——— Cálculo da Odometria ———*/
 
     // Variação no ângulo (yaw)
-    double delta_th = current_angular_vel_z_ * dt;
-    odom_yaw_ += delta_th; // Acumula o ângulo
+    double yaw_for_calculation;
+    double angular_vel_for_odom;
+
+    if (imu_initialized_) {
+        //  ela manda na rotação (é muito mais precisa)
+        // Se temos IMU, sobrescreve o Yaw acumulado dos encoders pelo da IMU
+        odom_yaw_ = imu_yaw_; 
+        yaw_for_calculation = imu_yaw_;
+        angular_vel_for_odom = imu_angular_vel_z_;
+    } else {
+        // Fallback: Se a IMU não ligou, usa encoders
+        double delta_th = current_angular_vel_z_ * dt;
+        odom_yaw_ += delta_th;
+        yaw_for_calculation = odom_yaw_;
+        angular_vel_for_odom = current_angular_vel_z_;
+    }
 
     // Variação em X e Y
-    double delta_x = (current_linear_vel_x_ * cos(odom_yaw_)) * dt;
-    double delta_y = (current_linear_vel_x_ * sin(odom_yaw_)) * dt;
+    double delta_x = (current_linear_vel_x_ * cos(yaw_for_calculation)) * dt;
+    double delta_y = (current_linear_vel_x_ * sin(yaw_for_calculation)) * dt;
 
     // Acumula a posição
     odom_x_ += delta_x;
@@ -174,7 +223,7 @@ void HwInterface::updateOdometry()
     odom.child_frame_id = "base_link";
     odom.twist.twist.linear.x  = current_linear_vel_x_;
     odom.twist.twist.linear.y  = 0.0; // Por ser diferencial
-    odom.twist.twist.angular.z = current_angular_vel_z_; 
+    odom.twist.twist.angular.z = angular_vel_for_odom; 
     odom_pub_.publish(odom);
 }
 

@@ -1,1 +1,13 @@
-/home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/devel/.private/robot_communication/share/common-lisp/ros/robot_communication/msg/robot_communication-msg.asd
+
+(cl:in-package :asdf)
+
+(defsystem "robot_communication-msg"
+  :depends-on (:roslisp-msg-protocol :roslisp-utils )
+  :components ((:file "_package")
+    (:file "encoder_comm" :depends-on ("_package_encoder_comm"))
+    (:file "_package_encoder_comm" :depends-on ("_package"))
+    (:file "velocity_comm" :depends-on ("_package_velocity_comm"))
+    (:file "_package_velocity_comm" :depends-on ("_package"))
+    (:file "vision_pattern" :depends-on ("_package_vision_pattern"))
+    (:file "_package_vision_pattern" :depends-on ("_package"))
+  ))

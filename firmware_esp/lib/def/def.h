@@ -63,7 +63,7 @@
 // Motor esquerdo (A)
 #define INPUT_LEFT_1        GPIO_NUM_32
 #define INPUT_LEFT_2        GPIO_NUM_33
-#define PWM_LEFT            GPIO_NUM_35
+#define PWM_LEFT            GPIO_NUM_27
 #define LEDC_CHANNEL_LEFT   LEDC_CHANNEL_2
 
 /*--- GPIO (Marco) ---*/

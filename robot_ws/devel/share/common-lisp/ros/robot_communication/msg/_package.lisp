@@ -1,1 +1,11 @@
-/home/davi/Documents/Semear/PB_2025_equipe1/robot_ws/devel/.private/robot_communication/share/common-lisp/ros/robot_communication/msg/_package.lisp
+(cl:defpackage robot_communication-msg
+  (:use )
+  (:export
+   "<ENCODER_COMM>"
+   "ENCODER_COMM"
+   "<VELOCITY_COMM>"
+   "VELOCITY_COMM"
+   "<VISION_PATTERN>"
+   "VISION_PATTERN"
+  ))
+
